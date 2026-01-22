@@ -7,8 +7,9 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { 
-            /* Цвета ТГ по умолчанию, если скрипт не подгрузится */
-            --tg-bg: var(--tg-theme-bg-color, #050505);
+            /* Фон за пределами игры — из темы ТГ */
+            --tg-bg: var(--tg-theme-bg-color, #1a1a1a);
+            /* Внутренний фон игры — всегда темный */
             --game-bg: #050505; 
             --accent: #22d3ee; 
             --gold: #facc15; 
@@ -19,10 +20,9 @@
 
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            /* Фикс сворачивания */
             overflow: hidden; 
             position: fixed; 
-            background-color: var(--tg-bg); 
+            background-color: var(--tg-bg); /* ТУТ МЕНЯЕТСЯ ЦВЕТ ОТ ТЕМЫ ТГ */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -30,16 +30,16 @@
             overscroll-behavior: none;
         }
 
-        /* Рамка игры */
+        /* Рамка игрового поля */
         #game-wrapper {
             position: relative;
-            width: calc(100% - 30px);
-            height: calc(100% - 60px); /* Больше места снизу и сверху */
-            background: var(--game-bg);
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: calc(100% - 24px); /* Отступы по бокам */
+            height: calc(100% - 40px); /* Отступы сверху и снизу */
+            background: var(--game-bg); /* ВСЕГДА ТЕМНЫЙ */
+            border-radius: 28px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
@@ -49,19 +49,20 @@
         
         .top-bar { 
             position: absolute; top: 15px; left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 15px; opacity: 0.5; 
+            display: flex; justify-content: space-between; padding: 0 15px; opacity: 0.6; 
         }
         .stat-card { 
             background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); 
             padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
-            min-width: 70px; text-align: center;
+            min-width: 70px; text-align: center; color: white;
         }
+        .stat-label { font-size: 8px; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
         .stat-value { font-size: 14px; font-weight: 800; }
 
         .controls { 
             position: absolute; bottom: 20px; left: 0; right: 0;
             display: flex; justify-content: center; gap: 12px; pointer-events: auto;
-            opacity: 0.4; transition: opacity 0.3s;
+            opacity: 0.5; transition: 0.3s;
         }
         .controls:active { opacity: 0.9; }
 
@@ -70,9 +71,9 @@
             background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-            transition: transform 0.2s, opacity 0.2s;
+            transition: 0.2s;
         }
-        .btn:hover, .btn:active { opacity: 1; transform: scale(1.1); }
+        .btn:hover, .btn:active { opacity: 1; transform: scale(1.1); background: rgba(255,255,255,0.2); }
         .btn-label { font-size: 7px; margin-top: 2px; font-weight: bold; }
         .btn-price { font-size: 9px; color: var(--gold); }
         .btn-turbo.active { background: var(--danger); box-shadow: 0 0 20px var(--danger); animation: pulse 0.5s infinite; }
@@ -90,11 +91,11 @@
             text-align: center; width: 85%; pointer-events: none; z-index: 1000;
         }
         .notif { font-size: 28px; font-weight: 900; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.8); display: none; }
-        .animate-notif { display: block; animation: notifAnim 2.5s forwards; }
+        .animate-notif { display: block; animation: notifAnim 2s forwards; }
 
         @keyframes notifAnim {
             0% { transform: scale(0.4); opacity: 0; }
-            15% { transform: scale(1.1); opacity: 1; }
+            15% { transform: scale(1.15); opacity: 1; }
             85% { transform: scale(1); opacity: 1; }
             100% { transform: scale(1.4); opacity: 0; }
         }
@@ -124,22 +125,16 @@
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
         if(tg.disableVerticalSwiping) tg.disableVerticalSwiping();
-        
-        // Авто-подстройка темы
-        if (tg.colorScheme === 'light') {
-            document.documentElement.style.setProperty('--game-bg', '#ffffff');
-            document.documentElement.style.setProperty('--bg', '#f0f0f0');
-            document.body.style.color = '#000000';
-        }
 
         const wrapper = document.getElementById('game-wrapper');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        
         const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa', '#f472b6', '#ffffff', '#ff9f1c', '#9b5de5', '#00f5d4'];
         const MOTIVATION = ["Красота!", "Вау!", "Мощно!", "Ни пылинки!", "Мастер!", "Блестяще!", "Огонь! 🔥", "Легендарно!", "Идеально!", "Ого! 🤩"];
-        const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", "ЧИСТО! ✨", "КРАСОТА! 🌟"];
+        const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", "ЧИСТО! ✨", "КРАСОТА! 🌟", "ВЕЛИКОЛЕПНО! 💎", "ГОТОВО! 📦", "СИЯНИЕ! 🎇", "БЕЗУПРЕЧНО! 🏆"];
 
-        let state = JSON.parse(localStorage.getItem('pixel_vaccum_final_v10')) || {
+        let state = JSON.parse(localStorage.getItem('pixel_vaccum_v15')) || {
             level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 50
         };
 
@@ -150,7 +145,6 @@
         function init() {
             window.addEventListener('resize', resize);
             resize(); spawnLevel(); requestAnimationFrame(loop);
-            // Жесткая блокировка скролла
             document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
         }
 
@@ -163,6 +157,7 @@
         function spawnLevel() {
             isTransitioning = false;
             const count = Math.floor(30 * Math.pow(1.12, state.level - 1));
+            // Новый цвет каждый уровень начиная с 3-го
             let colorLimit = (state.level >= 3) ? Math.min(state.level - 1, COLORS.length) : 1;
             const availableColors = COLORS.slice(0, colorLimit);
 
@@ -194,7 +189,7 @@
         }
 
         function loop() {
-            ctx.fillStyle = (tg.colorScheme === 'light') ? '#ffffff' : '#050505';
+            ctx.fillStyle = '#050505'; // Всегда черный фон поля
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let basePwr = (1.0 + state.pLvl * 0.3); 
@@ -204,7 +199,7 @@
             if(mouse.down) {
                 ctx.beginPath();
                 let grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, rad);
-                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 211, 238, 0.1)');
+                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 211, 238, 0.1)');
                 grad.addColorStop(1, 'transparent');
                 ctx.fillStyle = grad;
                 ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
@@ -247,7 +242,7 @@
             for(let i = floaters.length - 1; i >= 0; i--) {
                 let f = floaters[i]; f.y -= 0.8; f.life -= 0.015;
                 if(f.life <= 0) floaters.splice(i, 1);
-                else { ctx.globalAlpha = f.life; ctx.fillStyle = (tg.colorScheme === 'light') ? "black" : "white"; ctx.font = "bold 14px Arial"; ctx.textAlign="center"; ctx.fillText(f.txt, f.x, f.y); }
+                else { ctx.globalAlpha = f.life; ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign="center"; ctx.fillText(f.txt, f.x, f.y); }
             }
 
             for(let i = particles.length - 1; i >= 0; i--) {
@@ -263,7 +258,7 @@
             if(isTransitioning) return;
             isTransitioning = true;
             addMessage(WIN_PHRASES[(state.level - 1) % WIN_PHRASES.length]);
-            for(let i=0; i<200; i++) {
+            for(let i=0; i<250; i++) {
                 particles.push({ x: canvas.width/2, y: canvas.height/2, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20, life: 1.2, c: `hsl(${Math.random()*360}, 80%, 60%)` });
             }
             setTimeout(() => { state.level++; save(); spawnLevel(); }, 2500);
@@ -297,17 +292,17 @@
             document.getElementById('p-price').innerText = Math.floor(50 * Math.pow(1.8, state.pLvl));
             document.getElementById('t-price').innerText = state.tPrice;
             document.getElementById('btn-turbo').style.visibility = (state.level % 3 === 0) ? 'visible' : 'hidden';
-            let isMaxRad = (50 + state.rLvl * 15) >= canvas.width * 0.22;
+            let isMaxRad = (50 + state.rLvl * 15) >= wrapper.clientWidth * 0.22;
             document.getElementById('r-price').innerText = isMaxRad ? "MAX" : Math.floor(75 * Math.pow(1.8, state.rLvl));
+            if(isMaxRad) document.getElementById('btn-radius').disabled = true;
         }
 
         function toggleUI() {
             document.getElementById('ui').classList.toggle('ui-hidden');
             document.getElementById('eyeBtn').classList.toggle('eye-off');
         }
-        function save() { localStorage.setItem('pixel_vaccum_final_v10', JSON.stringify(state)); }
+        function save() { localStorage.setItem('pixel_vaccum_v15', JSON.stringify(state)); }
 
-        // Поправка координат с учетом рамки
         function handlePointer(e) {
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;

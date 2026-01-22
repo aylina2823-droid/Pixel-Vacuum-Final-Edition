@@ -6,76 +6,90 @@
     <title>Pixel Vacuum Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #050505; --accent: #22d3ee; --gold: #facc15; --danger: #ef4444; }
+        :root { 
+            /* Цвета ТГ по умолчанию, если скрипт не подгрузится */
+            --tg-bg: var(--tg-theme-bg-color, #050505);
+            --game-bg: #050505; 
+            --accent: #22d3ee; 
+            --gold: #facc15; 
+            --danger: #ef4444; 
+        }
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: var(--bg); color: white;
-            font-family: -apple-system, system-ui, sans-serif;
-            position: fixed; touch-action: none;
+            /* Фикс сворачивания */
+            overflow: hidden; 
+            position: fixed; 
+            background-color: var(--tg-bg); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            overscroll-behavior: none;
         }
-        canvas { display: block; }
 
-        .ui-layer { position: fixed; inset: 0; pointer-events: none; z-index: 10; transition: opacity 0.3s; }
+        /* Рамка игры */
+        #game-wrapper {
+            position: relative;
+            width: calc(100% - 30px);
+            height: calc(100% - 60px); /* Больше места снизу и сверху */
+            background: var(--game-bg);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; transition: opacity 0.3s; }
         .ui-hidden { opacity: 0; }
         
-        /* Стили для статистики сверху */
         .top-bar { 
-            position: absolute; top: env(safe-area-inset-top, 20px); left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 15px;
-            pointer-events: auto;
+            position: absolute; top: 15px; left: 0; right: 0;
+            display: flex; justify-content: space-between; padding: 0 15px; opacity: 0.5; 
         }
         .stat-card { 
             background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); 
-            padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-            min-width: 80px; text-align: center;
-            opacity: 0.5; transition: all 0.2s ease;
+            padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+            min-width: 70px; text-align: center;
         }
-        .stat-card:hover { opacity: 1; background: rgba(255,255,255,0.1); transform: translateY(2px); }
-        .stat-label { font-size: 9px; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
-        .stat-value { font-size: 16px; font-weight: 800; }
+        .stat-value { font-size: 14px; font-weight: 800; }
 
-        /* Кнопки управления */
         .controls { 
-            position: absolute; bottom: env(safe-area-inset-bottom, 30px); left: 0; right: 0;
-            display: flex; justify-content: center; gap: 15px; pointer-events: auto;
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 12px; pointer-events: auto;
+            opacity: 0.4; transition: opacity 0.3s;
         }
+        .controls:active { opacity: 0.9; }
+
         .btn {
-            width: 60px; height: 60px; border-radius: 50%; border: none;
+            width: 55px; height: 55px; border-radius: 50%; border: none;
             background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-            opacity: 0.4; transition: all 0.2s ease; /* Начальная прозрачность */
+            transition: transform 0.2s, opacity 0.2s;
         }
-        /* Эффект при наведении или нажатии */
-        .btn:hover, .btn:active { 
-            opacity: 1; 
-            transform: scale(1.1); 
-            background: rgba(255,255,255,0.2); 
-            border-color: rgba(255,255,255,0.4);
-        }
-        .btn-label { font-size: 8px; margin-top: 3px; font-weight: bold; }
-        .btn-price { font-size: 10px; color: var(--gold); }
-        .btn-turbo.active { 
-            background: var(--danger) !important; 
-            opacity: 1 !important; 
-            box-shadow: 0 0 30px var(--danger); 
-            animation: pulse 0.5s infinite; 
-        }
+        .btn:hover, .btn:active { opacity: 1; transform: scale(1.1); }
+        .btn-label { font-size: 7px; margin-top: 2px; font-weight: bold; }
+        .btn-price { font-size: 9px; color: var(--gold); }
+        .btn-turbo.active { background: var(--danger); box-shadow: 0 0 20px var(--danger); animation: pulse 0.5s infinite; }
 
         .eye-btn {
-            position: fixed; top: 110px; right: 15px; width: 36px; height: 36px;
+            position: absolute; top: 80px; right: 15px; width: 32px; height: 32px;
             border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             color: white; display: flex; align-items: center; justify-content: center; 
-            pointer-events: auto; z-index: 100; opacity: 0.3; transition: all 0.2s;
+            pointer-events: auto; z-index: 100; opacity: 0.3; transition: 0.2s;
         }
-        .eye-btn:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+        .eye-off { opacity: 0.1; }
 
         #notification-container {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; width: 85%; pointer-events: none; z-index: 1000;
         }
-        .notif { font-size: 32px; font-weight: 900; color: white; text-shadow: 0 0 25px rgba(255,255,255,0.8); display: none; }
+        .notif { font-size: 28px; font-weight: 900; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.8); display: none; }
         .animate-notif { display: block; animation: notifAnim 2.5s forwards; }
 
         @keyframes notifAnim {
@@ -88,38 +102,44 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div class="eye-btn" id="eyeBtn" onclick="toggleUI()">👁️</div>
-    <div id="ui" class="ui-layer">
-        <div class="top-bar">
-            <div class="stat-card"><div>LEVEL</div><div class="stat-value" id="lvl">1</div></div>
-            <div class="stat-card"><div>CLEARED</div><div class="stat-value"><span id="cleared">0</span>/<span id="total">0</span></div></div>
-            <div class="stat-card"><div>COINS</div><div class="stat-value" id="coins" style="color: #facc15">0</div></div>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div class="eye-btn" id="eyeBtn" onclick="toggleUI()">👁️</div>
+        <div id="ui" class="ui-layer">
+            <div class="top-bar">
+                <div class="stat-card"><div>LEVEL</div><div class="stat-value" id="lvl">1</div></div>
+                <div class="stat-card"><div>CLEARED</div><div class="stat-value"><span id="cleared">0</span>/<span id="total">0</span></div></div>
+                <div class="stat-card"><div>COINS</div><div class="stat-value" id="coins" style="color: #facc15">0</div></div>
+            </div>
+            <div class="controls">
+                <button class="btn" onclick="upgrade('power')" id="btn-power"><span>💪</span><div class="btn-label">СИЛА</div><div class="btn-price" id="p-price">50</div></button>
+                <button class="btn btn-turbo" onclick="activateTurbo()" id="btn-turbo"><span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">50</div></button>
+                <button class="btn" onclick="upgrade('radius')" id="btn-radius"><span>🔍</span><div class="btn-label">РАДИУС</div><div class="btn-price" id="r-price">75</div></button>
+            </div>
         </div>
-        <div class="controls">
-            <button class="btn" onclick="upgrade('power')" id="btn-power"><span>💪</span><div class="btn-label">СИЛА</div><div class="btn-price" id="p-price">50</div></button>
-            <button class="btn btn-turbo" onclick="activateTurbo()" id="btn-turbo"><span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">50</div></button>
-            <button class="btn" onclick="upgrade('radius')" id="btn-radius"><span>🔍</span><div class="btn-label">РАДИУС</div><div class="btn-price" id="r-price">75</div></button>
-        </div>
+        <div id="notification-container"><div id="notif" class="notif"></div></div>
     </div>
-    <div id="notification-container"><div id="notif" class="notif"></div></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
         if(tg.disableVerticalSwiping) tg.disableVerticalSwiping();
+        
+        // Авто-подстройка темы
+        if (tg.colorScheme === 'light') {
+            document.documentElement.style.setProperty('--game-bg', '#ffffff');
+            document.documentElement.style.setProperty('--bg', '#f0f0f0');
+            document.body.style.color = '#000000';
+        }
 
+        const wrapper = document.getElementById('game-wrapper');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa', '#f472b6', '#ffffff', '#ff9f1c', '#9b5de5', '#00f5d4'];
         const MOTIVATION = ["Красота!", "Вау!", "Мощно!", "Ни пылинки!", "Мастер!", "Блестяще!", "Огонь! 🔥", "Легендарно!", "Идеально!", "Ого! 🤩"];
-        const WIN_PHRASES = [
-            "БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", 
-            "ЧИСТО! ✨", "КРАСОТА! 🌟", "ВЕЛИКОЛЕПНО! 💎", 
-            "ГОТОВО! 📦", "СИЯНИЕ! 🎇", "БЕЗУПРЕЧНО! 🏆"
-        ];
+        const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", "ЧИСТО! ✨", "КРАСОТА! 🌟"];
 
-        let state = JSON.parse(localStorage.getItem('pixel_vaccum_v12')) || {
+        let state = JSON.parse(localStorage.getItem('pixel_vaccum_final_v10')) || {
             level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 50
         };
 
@@ -128,24 +148,29 @@
         let lastFloaterTime = 0, msgQueue = [];
 
         function init() {
-            window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            spawnLevel(); requestAnimationFrame(loop);
+            window.addEventListener('resize', resize);
+            resize(); spawnLevel(); requestAnimationFrame(loop);
+            // Жесткая блокировка скролла
+            document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        }
+
+        function resize() {
+            const rect = wrapper.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
         }
 
         function spawnLevel() {
             isTransitioning = false;
             const count = Math.floor(30 * Math.pow(1.12, state.level - 1));
-            // Новый цвет каждый уровень начиная с 3-го
-            let colorLimit = 1;
-            if (state.level >= 3) colorLimit = Math.min(state.level - 1, COLORS.length);
+            let colorLimit = (state.level >= 3) ? Math.min(state.level - 1, COLORS.length) : 1;
             const availableColors = COLORS.slice(0, colorLimit);
 
             pixels = [];
             for(let i=0; i<count; i++) {
                 const isHeavy = state.level >= 7 && Math.random() < 0.15;
                 pixels.push({
-                    x: 50 + Math.random()*(canvas.width-100), y: 50 + Math.random()*(canvas.height-100),
+                    x: 30 + Math.random()*(canvas.width-60), y: 30 + Math.random()*(canvas.height-60),
                     gold: state.level >= 5 && Math.random() < 0.03, heavy: isHeavy, mass: isHeavy ? 3 : 1,
                     color: isHeavy ? '#4b5563' : availableColors[Math.floor(Math.random()*availableColors.length)]
                 });
@@ -168,24 +193,18 @@
             setTimeout(() => { el.classList.remove('animate-notif'); msgQueue.shift(); setTimeout(processQueue, 300); }, 2400);
         }
 
-        function triggerHaptic() {
-            if(!tg.HapticFeedback) return;
-            hapticCounter++;
-            if(hapticCounter >= 10) { tg.HapticFeedback.impactOccurred('light'); hapticCounter = 0; }
-        }
-
         function loop() {
-            ctx.fillStyle = '#050505';
+            ctx.fillStyle = (tg.colorScheme === 'light') ? '#ffffff' : '#050505';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let basePwr = (1.0 + state.pLvl * 0.3); // Мягкий рост силы
-            let suctionMultiplier = isTurbo ? 2.0 : 1.0; // Плавное Турбо
+            let basePwr = (1.0 + state.pLvl * 0.3); 
+            let suctionMultiplier = isTurbo ? 2.0 : 1.0;
             let rad = isTurbo ? Math.min(50 + state.rLvl * 15, canvas.width * 0.22) * 1.3 : Math.min(50 + state.rLvl * 15, canvas.width * 0.22);
             
             if(mouse.down) {
                 ctx.beginPath();
                 let grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, rad);
-                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 211, 238, 0.1)');
+                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 211, 238, 0.1)');
                 grad.addColorStop(1, 'transparent');
                 ctx.fillStyle = grad;
                 ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
@@ -202,20 +221,10 @@
 
                 if(mouse.down && dist < rad) {
                     let speed = (basePwr * suctionMultiplier / p.mass) * 0.12; 
-                    
-                    // ЭФФЕКТ ВОРОНКИ
                     let swirlAmount = isTurbo ? 0.6 : 0.35;
                     let vx = (dx / dist) + (-dy / dist) * swirlAmount;
                     let vy = (dy / dist) + (dx / dist) * swirlAmount;
-
-                    let moveX = vx * dist * speed;
-                    let moveY = vy * dist * speed;
-                    
-                    if (Math.abs(moveX) > Math.abs(dx)) moveX = dx;
-                    if (Math.abs(moveY) > Math.abs(dy)) moveY = dy;
-
-                    p.x += moveX;
-                    p.y += moveY;
+                    p.x += vx * dist * speed; p.y += vy * dist * speed;
 
                     if(dist < 10) {
                         state.coins += p.gold ? 3 : 1;
@@ -238,7 +247,7 @@
             for(let i = floaters.length - 1; i >= 0; i--) {
                 let f = floaters[i]; f.y -= 0.8; f.life -= 0.015;
                 if(f.life <= 0) floaters.splice(i, 1);
-                else { ctx.globalAlpha = f.life; ctx.fillStyle = "white"; ctx.font = "bold 16px Arial"; ctx.textAlign="center"; ctx.fillText(f.txt, f.x, f.y); }
+                else { ctx.globalAlpha = f.life; ctx.fillStyle = (tg.colorScheme === 'light') ? "black" : "white"; ctx.font = "bold 14px Arial"; ctx.textAlign="center"; ctx.fillText(f.txt, f.x, f.y); }
             }
 
             for(let i = particles.length - 1; i >= 0; i--) {
@@ -253,10 +262,9 @@
         function winLevel() {
             if(isTransitioning) return;
             isTransitioning = true;
-            const winTxt = WIN_PHRASES[(state.level - 1) % WIN_PHRASES.length];
-            addMessage(winTxt);
-            for(let i=0; i<250; i++) {
-                particles.push({ x: canvas.width/2, y: canvas.height, vx: (Math.random()-0.5)*20, vy: -Math.random()*25 - 10, life: 1.2, c: `hsl(${Math.random()*360}, 80%, 60%)` });
+            addMessage(WIN_PHRASES[(state.level - 1) % WIN_PHRASES.length]);
+            for(let i=0; i<200; i++) {
+                particles.push({ x: canvas.width/2, y: canvas.height/2, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20, life: 1.2, c: `hsl(${Math.random()*360}, 80%, 60%)` });
             }
             setTimeout(() => { state.level++; save(); spawnLevel(); }, 2500);
         }
@@ -297,9 +305,17 @@
             document.getElementById('ui').classList.toggle('ui-hidden');
             document.getElementById('eyeBtn').classList.toggle('eye-off');
         }
-        function save() { localStorage.setItem('pixel_vaccum_v12', JSON.stringify(state)); }
-        window.addEventListener('pointerdown', e => { mouse.down = true; mouse.x = e.clientX; mouse.y = e.clientY; });
-        window.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        function save() { localStorage.setItem('pixel_vaccum_final_v10', JSON.stringify(state)); }
+
+        // Поправка координат с учетом рамки
+        function handlePointer(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        }
+
+        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); });
+        window.addEventListener('pointermove', e => { handlePointer(e); });
         window.addEventListener('pointerup', () => mouse.down = false);
         window.onload = init;
     </script>

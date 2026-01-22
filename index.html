@@ -7,9 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { 
-            /* Фон за пределами игры — из темы ТГ */
-            --tg-bg: var(--tg-theme-bg-color, #1a1a1a);
-            /* Внутренний фон игры — всегда темный */
             --game-bg: #050505; 
             --accent: #22d3ee; 
             --gold: #facc15; 
@@ -22,7 +19,8 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; 
             position: fixed; 
-            background-color: var(--tg-bg); /* ТУТ МЕНЯЕТСЯ ЦВЕТ ОТ ТЕМЫ ТГ */
+            /* Резервный цвет фона */
+            background-color: #1a1a1a; 
             display: flex;
             align-items: center;
             justify-content: center;
@@ -33,9 +31,9 @@
         /* Рамка игрового поля */
         #game-wrapper {
             position: relative;
-            width: calc(100% - 24px); /* Отступы по бокам */
-            height: calc(100% - 40px); /* Отступы сверху и снизу */
-            background: var(--game-bg); /* ВСЕГДА ТЕМНЫЙ */
+            width: calc(100% - 24px);
+            height: calc(100% - 40px);
+            background: var(--game-bg);
             border-radius: 28px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             overflow: hidden;
@@ -123,8 +121,19 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+        tg.ready();
+        tg.expand();
         if(tg.disableVerticalSwiping) tg.disableVerticalSwiping();
+
+        // ФУНКЦИЯ ПРИНУДИТЕЛЬНОЙ ПОКРАСКИ ФОНА ИЗ ТЕМЫ ТГ
+        function applyTheme() {
+            const bgColor = tg.themeParams.bg_color || (tg.colorScheme === 'light' ? '#ffffff' : '#1a1a1a');
+            document.body.style.backgroundColor = bgColor;
+        }
+        
+        // Следим за изменениями темы
+        tg.onEvent('themeChanged', applyTheme);
+        applyTheme();
 
         const wrapper = document.getElementById('game-wrapper');
         const canvas = document.getElementById('gameCanvas');
@@ -134,7 +143,7 @@
         const MOTIVATION = ["Красота!", "Вау!", "Мощно!", "Ни пылинки!", "Мастер!", "Блестяще!", "Огонь! 🔥", "Легендарно!", "Идеально!", "Ого! 🤩"];
         const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", "ЧИСТО! ✨", "КРАСОТА! 🌟", "ВЕЛИКОЛЕПНО! 💎", "ГОТОВО! 📦", "СИЯНИЕ! 🎇", "БЕЗУПРЕЧНО! 🏆"];
 
-        let state = JSON.parse(localStorage.getItem('pixel_vaccum_v15')) || {
+        let state = JSON.parse(localStorage.getItem('pixel_vaccum_final_v15')) || {
             level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 50
         };
 
@@ -157,7 +166,7 @@
         function spawnLevel() {
             isTransitioning = false;
             const count = Math.floor(30 * Math.pow(1.12, state.level - 1));
-            // Новый цвет каждый уровень начиная с 3-го
+            // +1 цвет каждый уровень начиная с 3-го
             let colorLimit = (state.level >= 3) ? Math.min(state.level - 1, COLORS.length) : 1;
             const availableColors = COLORS.slice(0, colorLimit);
 
@@ -185,11 +194,15 @@
             const el = document.getElementById('notif');
             el.innerText = msgQueue[0];
             el.classList.add('animate-notif');
-            setTimeout(() => { el.classList.remove('animate-notif'); msgQueue.shift(); setTimeout(processQueue, 300); }, 2400);
+            setTimeout(() => {
+                el.classList.remove('animate-notif');
+                msgQueue.shift();
+                setTimeout(processQueue, 300);
+            }, 2400);
         }
 
         function loop() {
-            ctx.fillStyle = '#050505'; // Всегда черный фон поля
+            ctx.fillStyle = '#050505'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let basePwr = (1.0 + state.pLvl * 0.3); 
@@ -216,7 +229,7 @@
 
                 if(mouse.down && dist < rad) {
                     let speed = (basePwr * suctionMultiplier / p.mass) * 0.12; 
-                    let swirlAmount = isTurbo ? 0.6 : 0.35;
+                    let swirlAmount = isTurbo ? 0.6 : 0.35; // ЭФФЕКТ ВОРОНКИ
                     let vx = (dx / dist) + (-dy / dist) * swirlAmount;
                     let vy = (dy / dist) + (dx / dist) * swirlAmount;
                     p.x += vx * dist * speed; p.y += vy * dist * speed;
@@ -258,7 +271,7 @@
             if(isTransitioning) return;
             isTransitioning = true;
             addMessage(WIN_PHRASES[(state.level - 1) % WIN_PHRASES.length]);
-            for(let i=0; i<250; i++) {
+            for(let i=0; i<200; i++) {
                 particles.push({ x: canvas.width/2, y: canvas.height/2, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20, life: 1.2, c: `hsl(${Math.random()*360}, 80%, 60%)` });
             }
             setTimeout(() => { state.level++; save(); spawnLevel(); }, 2500);

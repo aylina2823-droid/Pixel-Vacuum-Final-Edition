@@ -3,101 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Vacuum: Meme Bosses</title>
+    <title>Pixel Vacuum Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #050505; --accent: #22d3ee; --gold: #facc15; --danger: #ef4444; }
+        :root { 
+            --game-bg: #050505; 
+            --accent: #22d3ee; 
+            --gold: #facc15; 
+            --danger: #ef4444; 
+        }
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; position: fixed; 
-            background-color: var(--tg-theme-bg-color, #1a1a1a);
-            display: flex; align-items: center; justify-content: center;
-            touch-action: none; overscroll-behavior: none; font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden; 
+            position: fixed; 
+            background-color: #1a1a1a; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            overscroll-behavior: none;
         }
 
         #game-wrapper {
-            position: relative; width: calc(100% - 24px); height: calc(100% - 40px);
-            background: #000; border-radius: 28px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            width: calc(100% - 24px);
+            height: calc(100% - 40px);
+            background: var(--game-bg);
+            border-radius: 28px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
+
         .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; transition: opacity 0.3s; }
+        .ui-hidden { opacity: 0; }
         
         .top-bar { 
             position: absolute; top: 15px; left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 10px; opacity: 0.7; 
+            display: flex; justify-content: space-between; padding: 0 15px; opacity: 0.6; 
         }
         .stat-card { 
             background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); 
-            padding: 6px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
             min-width: 70px; text-align: center; color: white;
         }
+        .stat-label { font-size: 8px; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
         .stat-value { font-size: 14px; font-weight: 800; }
 
         .controls { 
             position: absolute; bottom: 20px; left: 0; right: 0;
-            display: flex; justify-content: center; gap: 8px; pointer-events: auto; opacity: 0.6;
+            display: flex; justify-content: center; gap: 12px; pointer-events: auto;
+            opacity: 0.5; transition: 0.3s;
         }
 
         .btn {
-            width: 55px; height: 55px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.1); color: white; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
+            width: 55px; height: 55px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.2s;
         }
-        .btn:active { transform: scale(1.1); opacity: 1; background: rgba(255,255,255,0.2); }
-        .btn-label { font-size: 7px; font-weight: bold; margin-top: 2px; }
+        .btn:hover, .btn:active { opacity: 1; transform: scale(1.1); background: rgba(255,255,255,0.2); }
+        .btn-label { font-size: 7px; margin-top: 2px; font-weight: bold; }
         .btn-price { font-size: 9px; color: var(--gold); }
-        
-        .btn-turbo.active { background: var(--danger) !important; opacity: 1; box-shadow: 0 0 20px var(--danger); animation: pulse 0.5s infinite; }
-        .btn-shield.active { background: #3b82f6 !important; opacity: 1; box-shadow: 0 0 20px #3b82f6; }
+        .btn-turbo.active { background: var(--danger); box-shadow: 0 0 20px var(--danger); animation: pulse 0.5s infinite; }
 
-        #skin-btn { position: absolute; top: 80px; left: 15px; width: 35px; height: 35px; font-size: 18px; opacity: 0.3; pointer-events: auto; }
-        #eye-btn { position: absolute; top: 80px; right: 15px; width: 35px; height: 35px; font-size: 18px; opacity: 0.3; pointer-events: auto; }
+        .eye-btn {
+            position: absolute; top: 80px; right: 15px; width: 32px; height: 32px;
+            border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; display: flex; align-items: center; justify-content: center; 
+            pointer-events: auto; z-index: 100; opacity: 0.3; transition: 0.2s;
+        }
 
         #notification-container {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; width: 100%; pointer-events: none; z-index: 1000;
+            text-align: center; width: 85%; pointer-events: none; z-index: 1000;
         }
-        .notif { font-size: 32px; font-weight: 900; color: white; display: none; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
-        .animate-notif { display: block; animation: notifAnim 2.3s forwards; }
+        .notif { font-size: 28px; font-weight: 900; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.8); display: none; }
+        .animate-notif { display: block; animation: notifAnim 2s forwards; }
 
         @keyframes notifAnim {
-            0% { transform: scale(0.5); opacity: 0; }
-            20% { transform: scale(1.1); opacity: 1; }
-            80% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(0.4); opacity: 0; }
+            15% { transform: scale(1.15); opacity: 1; }
+            85% { transform: scale(1); opacity: 1; }
             100% { transform: scale(1.4); opacity: 0; }
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        
-        #overheat-msg { 
-            position: absolute; top: 40%; width: 100%; text-align: center; 
-            color: #ff0000; font-weight: 900; font-size: 24px; display: none;
-            text-shadow: 0 0 10px black; z-index: 2000;
-        }
     </style>
 </head>
 <body>
     <div id="game-wrapper">
-        <div id="overheat-msg">ПЕРЕГРЕВ! ⚠️</div>
         <canvas id="gameCanvas"></canvas>
-        
-        <button class="btn" id="skin-btn" onclick="nextSkin()">🎨</button>
-        <button class="btn" id="eye-btn" onclick="toggleUI()">👁️</button>
-        
+        <div class="eye-btn" id="eyeBtn" onclick="toggleUI()">👁️</div>
         <div id="ui" class="ui-layer">
             <div class="top-bar">
                 <div class="stat-card"><div>LEVEL</div><div class="stat-value" id="lvl">1</div></div>
-                <div class="stat-card"><div>УБРАНО</div><div class="stat-value"><span id="cleared">0</span>/<span id="total">0</span></div></div>
+                <div class="stat-card"><div>CLEARED</div><div class="stat-value"><span id="cleared">0</span>/<span id="total">0</span></div></div>
                 <div class="stat-card"><div>COINS</div><div class="stat-value" id="coins" style="color: #facc15">0</div></div>
             </div>
-            <div class="controls" id="controls">
-                <button class="btn" onclick="upgrade('power')"><span>💪</span><div class="btn-label">СИЛА</div><div class="btn-price" id="p-price">50</div></button>
-                <button class="btn btn-turbo" onclick="activateTurbo()" id="btn-turbo"><span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">100</div></button>
+            <div class="controls">
+                <button class="btn" onclick="upgrade('power')" id="btn-power"><span>💪</span><div class="btn-label">СИЛА</div><div class="btn-price" id="p-price">50</div></button>
+                <button class="btn btn-turbo" onclick="activateTurbo()" id="btn-turbo"><span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">50</div></button>
                 <button class="btn" onclick="upgrade('radius')" id="btn-radius"><span>🔍</span><div class="btn-label">РАДИУС</div><div class="btn-price" id="r-price">75</div></button>
-                <button class="btn" onclick="activateShield()" id="btn-shield"><span>🛡️</span><div class="btn-label">ЩИТ</div><div class="btn-price">150</div></button>
             </div>
         </div>
         <div id="notification-container"><div id="notif" class="notif"></div></div>
@@ -105,160 +117,128 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+        tg.ready();
+        tg.expand();
+        if(tg.disableVerticalSwiping) tg.disableVerticalSwiping();
 
+        function applyTheme() {
+            const bgColor = tg.themeParams.bg_color || (tg.colorScheme === 'light' ? '#ffffff' : '#1a1a1a');
+            document.body.style.backgroundColor = bgColor;
+        }
+        tg.onEvent('themeChanged', applyTheme);
+        applyTheme();
+
+        const wrapper = document.getElementById('game-wrapper');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa', '#f472b6', '#ffffff', '#ff9f1c'];
-        const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", "ЧИСТО! ✨"];
+        
+        const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa', '#f472b6', '#ffffff', '#ff9f1c', '#9b5de5', '#00f5d4'];
+        const MOTIVATION = ["Красота!", "Вау!", "Мощно!", "Ни пылинки!", "Мастер!", "Блестяще!", "Огонь! 🔥", "Легендарно!", "Идеально!", "Ого! 🤩"];
+        const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ИДЕАЛЬНО! 👌", "ЧИСТО! ✨", "КРАСОТА! 🌟", "ВЕЛИКОЛЕПНО! 💎", "ГОТОВО! 📦", "СИЯНИЕ! 🎇", "БЕЗУПРЕЧНО! 🏆"];
 
-        // СЮДА БУДУТ ДОБАВЛЯТЬСЯ ТВОИ МЕМЫ
-        const MEME_FILES = ['pepe.png']; 
-
-        let state = JSON.parse(localStorage.getItem('pixel_vaccum_vMeme_final')) || {
-            level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 50, skinIdx: 0
+        let state = JSON.parse(localStorage.getItem('pixel_vaccum_final_v20')) || {
+            level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 50
         };
 
-        const SKINS = [
-            { name: 'VACUUM', emoji: '🌪️', color: 'rgba(34, 211, 238, 0.1)' },
-            { name: 'CAT', emoji: '🐱', color: 'rgba(251, 191, 36, 0.2)' },
-            { name: 'HOLE', emoji: '🕳️', color: 'rgba(255, 255, 255, 0.1)' },
-            { name: 'UFO', emoji: '🛸', color: 'rgba(74, 222, 128, 0.2)' }
-        ];
-
-        let pixels = [], bombs = [], particles = [], floaters = [], isTurbo = false, isShield = false, isTransitioning = false;
+        let pixels = [], particles = [], floaters = [], isTurbo = false, isTransitioning = false;
         let mouse = { x: -100, y: -100, down: false };
-        let msgQueue = [], overheatUntil = 0;
+        let lastFloaterTime = 0, msgQueue = [];
 
         function init() {
             window.addEventListener('resize', resize);
             resize(); spawnLevel(); requestAnimationFrame(loop);
             document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-            applyTheme();
-        }
-
-        function applyTheme() {
-            document.body.style.backgroundColor = tg.themeParams.bg_color || (tg.colorScheme === 'light' ? '#ffffff' : '#1a1a1a');
         }
 
         function resize() {
-            const rect = document.getElementById('game-wrapper').getBoundingClientRect();
-            canvas.width = rect.width; canvas.height = rect.height;
+            const rect = wrapper.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
         }
 
-        async function spawnLevel() {
-            isTransitioning = false; pixels = []; bombs = [];
-            const isBoss = state.level % 5 === 0;
+        function spawnLevel() {
+            isTransitioning = false;
+            // СТАРТ С 50 ПИКСЕЛЕЙ + ПРИРОСТ
+            const count = Math.floor(50 * Math.pow(1.15, state.level - 1));
+            
+            // НОВЫЙ ЦВЕТ КАЖДЫЙ УРОВЕНЬ СО ВТОРОГО
+            let colorLimit = state.level; 
+            const availableColors = COLORS.slice(0, Math.min(colorLimit, COLORS.length));
 
-            if (isBoss) {
-                addMessage("БОСС-МЕМ! 🖼️");
-                await loadMeme('pepe.png'); // Ищем твой файл pepe.png
-            } else {
-                const count = Math.floor(50 * Math.pow(1.15, state.level - 1));
-                const colorLimit = state.level >= 2 ? Math.min(state.level, COLORS.length) : 1;
-                const availableColors = COLORS.slice(0, colorLimit);
-                for(let i=0; i<count; i++) {
-                    pixels.push({
-                        x: 30 + Math.random()*(canvas.width-60), y: 30 + Math.random()*(canvas.height-60),
-                        gold: Math.random() < 0.05, mass: 1, color: availableColors[Math.floor(Math.random()*availableColors.length)]
-                    });
-                }
-                if (state.level >= 5) startBombSpawner();
+            pixels = [];
+            for(let i=0; i<count; i++) {
+                const isHeavy = state.level >= 7 && Math.random() < 0.15;
+                pixels.push({
+                    x: 30 + Math.random()*(canvas.width-60), y: 30 + Math.random()*(canvas.height-60),
+                    gold: state.level >= 5 && Math.random() < 0.03, heavy: isHeavy, mass: isHeavy ? 3 : 1,
+                    color: isHeavy ? '#4b5563' : availableColors[Math.floor(Math.random()*availableColors.length)]
+                });
             }
-            document.getElementById('total').innerText = pixels.length;
+            document.getElementById('total').innerText = count;
             updateUI();
             addMessage(`УРОВЕНЬ ${state.level}`);
         }
 
-        function loadMeme(url) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.src = url;
-                img.onload = () => {
-                    const tCanvas = document.createElement('canvas');
-                    const tCtx = tCanvas.getContext('2d');
-                    tCanvas.width = 50; tCanvas.height = 40;
-                    tCtx.drawImage(img, 0, 0, 50, 40);
-                    const data = tCtx.getImageData(0, 0, 50, 40).data;
-                    const startX = canvas.width/2 - 100;
-                    const startY = canvas.height/2 - 80;
-                    for (let y = 0; y < 40; y++) {
-                        for (let x = 0; x < 50; x++) {
-                            const i = (y * 50 + x) * 4;
-                            if (data[i + 3] > 128) {
-                                pixels.push({
-                                    x: startX + x * 4, y: startY + y * 4,
-                                    color: `rgb(${data[i]},${data[i+1]},${data[i+2]})`,
-                                    mass: 12, isBoss: true
-                                });
-                            }
-                        }
-                    }
-                    resolve();
-                };
-                img.onerror = () => { resolve(); spawnLevel(); }; // Если картинки нет, пропустить
-            });
+        function addMessage(txt) {
+            msgQueue.push(txt);
+            if(msgQueue.length === 1) processQueue();
         }
 
-        function startBombSpawner() {
-            if (isTransitioning) return;
+        function processQueue() {
+            if(msgQueue.length === 0) return;
+            const el = document.getElementById('notif');
+            el.innerText = msgQueue[0];
+            el.classList.add('animate-notif');
             setTimeout(() => {
-                if (!isTransitioning) {
-                    bombs.push({ x: 50 + Math.random()*(canvas.width-100), y: 50 + Math.random()*(canvas.height-100), dieAt: Date.now() + 5000 });
-                    startBombSpawner();
-                }
-            }, 4000 + Math.random()*3000);
+                el.classList.remove('animate-notif');
+                msgQueue.shift();
+                setTimeout(processQueue, 300);
+            }, 2400);
         }
 
         function loop() {
-            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            const isOverheated = Date.now() < overheatUntil;
-            document.getElementById('overheat-msg').style.display = isOverheated ? 'block' : 'none';
+            ctx.fillStyle = '#050505'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let basePwr = (1.0 + state.pLvl * 0.1); // Снизили прирост силы
-            let suctionMult = isTurbo ? 2.0 : 1.0;
+            let basePwr = (1.0 + state.pLvl * 0.3); 
+            let suctionMultiplier = isTurbo ? 2.0 : 1.0;
             let rad = isTurbo ? Math.min(50 + state.rLvl * 15, canvas.width * 0.22) * 1.3 : Math.min(50 + state.rLvl * 15, canvas.width * 0.22);
             
-            if(mouse.down && !isOverheated) {
-                const curSkin = SKINS[state.skinIdx];
+            if(mouse.down) {
                 ctx.beginPath();
                 let grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, rad);
-                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.2)' : isShield ? 'rgba(59, 130, 246, 0.2)' : curSkin.color);
+                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 211, 238, 0.1)');
                 grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad; ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
-                ctx.font = "24px Arial"; ctx.textAlign="center";
-                ctx.fillText(isShield ? '🛡️' : curSkin.emoji, mouse.x, mouse.y + 8);
+                ctx.fillStyle = grad;
+                ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
             }
 
-            // Бомбы
-            for(let i = bombs.length - 1; i >= 0; i--) {
-                let b = bombs[i];
-                if (Date.now() > b.dieAt) { bombs.splice(i, 1); continue; }
-                ctx.fillStyle = "#222"; ctx.fillRect(b.x-6, b.y-6, 12, 12);
-                ctx.fillStyle = (Math.sin(Date.now()/100) > 0) ? "#f00" : "#500"; ctx.fillRect(b.x-3, b.y-3, 6, 6);
-                let dx = mouse.x - b.x, dy = mouse.y - b.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if(mouse.down && dist < rad && !isOverheated) {
-                    if(dist < 15) {
-                        if (!isShield) { overheatUntil = Date.now() + 3000; state.coins = Math.max(0, state.coins - 20); }
-                        bombs.splice(i, 1); updateUI();
-                    }
-                }
-            }
-
-            // Пиксели
             for(let i = pixels.length - 1; i >= 0; i--) {
                 let p = pixels[i];
                 let dx = mouse.x - p.x, dy = mouse.y - p.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
-                if(mouse.down && dist < rad && !isOverheated) {
-                    let speed = (basePwr * suctionMult / p.mass) * 0.12; 
-                    let swirl = isTurbo ? 0.6 : 0.35;
-                    p.x += ((dx/dist) + (-dy/dist)*swirl) * dist * speed;
-                    p.y += ((dy/dist) + (dx/dist)*swirl) * dist * speed;
+
+                if(p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+                    p.x = canvas.width/2; p.y = canvas.height/2;
+                }
+
+                if(mouse.down && dist < rad) {
+                    let speed = (basePwr * suctionMultiplier / p.mass) * 0.12; 
+                    let swirlAmount = isTurbo ? 0.6 : 0.35; // ВОРОНКА
+                    let vx = (dx / dist) + (-dy / dist) * swirlAmount;
+                    let vy = (dy / dist) + (dx / dist) * swirlAmount;
+                    p.x += vx * dist * speed; p.y += vy * dist * speed;
+
                     if(dist < 10) {
                         state.coins += p.gold ? 3 : 1;
-                        pixels.splice(i, 1); updateUI();
+                        if(tg.HapticFeedback && Math.random() < 0.2) tg.HapticFeedback.impactOccurred('light');
+                        let now = Date.now();
+                        if(now - lastFloaterTime > 800 && Math.random() < 0.1) {
+                            floaters.push({ x: p.x, y: p.y, txt: MOTIVATION[Math.floor(Math.random()*MOTIVATION.length)], life: 1 });
+                            lastFloaterTime = now;
+                        }
+                        pixels.splice(i, 1);
+                        updateUI();
                         if(pixels.length === 0) winLevel();
                         continue;
                     }
@@ -267,10 +247,16 @@
                 ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
 
+            for(let i = floaters.length - 1; i >= 0; i--) {
+                let f = floaters[i]; f.y -= 0.8; f.life -= 0.015;
+                if(f.life <= 0) floaters.splice(i, 1);
+                else { ctx.globalAlpha = f.life; ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign="center"; ctx.fillText(f.txt, f.x, f.y); }
+            }
+
             for(let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.4; p.life -= 0.02;
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.4; p.life -= 0.015;
                 if(p.life <= 0) particles.splice(i, 1);
-                else { ctx.globalAlpha = p.life; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 4, 4); }
+                else { ctx.globalAlpha = p.life; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 5, 5); }
             }
             ctx.globalAlpha = 1;
             requestAnimationFrame(loop);
@@ -279,10 +265,9 @@
         function winLevel() {
             if(isTransitioning) return;
             isTransitioning = true;
-            const isBoss = state.level % 5 === 0;
-            addMessage(isBoss ? "МЕМ ПОБЕЖДЕН! 🏆" : WIN_PHRASES[Math.floor(Math.random()*WIN_PHRASES.length)]);
-            for(let i=0; i<150; i++) {
-                particles.push({ x: canvas.width/2, y: canvas.height/2, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20, life: 1, c: `hsl(${Math.random()*360}, 80%, 60%)` });
+            addMessage(WIN_PHRASES[(state.level - 1) % WIN_PHRASES.length]);
+            for(let i=0; i<200; i++) {
+                particles.push({ x: canvas.width/2, y: canvas.height/2, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20, life: 1.2, c: `hsl(${Math.random()*360}, 80%, 60%)` });
             }
             setTimeout(() => { state.level++; save(); spawnLevel(); }, 2500);
         }
@@ -296,54 +281,42 @@
             }
         }
 
-        function activateShield() {
-            if(state.coins >= 150 && !isShield) {
-                state.coins -= 150; isShield = true;
-                document.getElementById('btn-shield').classList.add('active');
-                addMessage("ЩИТ АКТИВИРОВАН! 🛡️");
-                setTimeout(() => { isShield = false; document.getElementById('btn-shield').classList.remove('active'); }, 10000);
-                save(); updateUI();
-            }
-        }
-
         function activateTurbo() {
             if(state.coins >= state.tPrice && !isTurbo) {
-                state.coins -= state.tPrice; state.tPrice = Math.floor(state.tPrice * 1.6);
-                isTurbo = true; document.getElementById('btn-turbo').classList.add('active');
+                state.coins -= state.tPrice;
+                state.tPrice = Math.floor(state.tPrice * 1.6);
+                isTurbo = true;
+                document.getElementById('btn-turbo').classList.add('active');
                 addMessage("УРАГАН! 🌪️");
                 setTimeout(() => { isTurbo = false; document.getElementById('btn-turbo').classList.remove('active'); }, 5000);
                 save(); updateUI();
             }
         }
 
-        function nextSkin() {
-            state.skinIdx = (state.skinIdx + 1) % SKINS.length;
-            save(); addMessage(`СКИН: ${SKINS[state.skinIdx].name}`);
-        }
-
         function updateUI() {
             document.getElementById('lvl').innerText = state.level;
             document.getElementById('coins').innerText = Math.floor(state.coins);
-            document.getElementById('cleared').innerText = (document.getElementById('total').innerText || 0) - pixels.length;
+            document.getElementById('cleared').innerText = document.getElementById('total').innerText - pixels.length;
             document.getElementById('p-price').innerText = Math.floor(50 * Math.pow(1.8, state.pLvl));
             document.getElementById('t-price').innerText = state.tPrice;
             document.getElementById('btn-turbo').style.visibility = (state.level % 3 === 0) ? 'visible' : 'hidden';
-            let isMaxRad = (50 + state.rLvl * 15) >= canvas.width * 0.22;
-            document.getElementById('btn-radius').style.display = isMaxRad ? "none" : "flex";
+            let isMaxRad = (50 + state.rLvl * 15) >= wrapper.clientWidth * 0.22;
+            document.getElementById('r-price').innerText = isMaxRad ? "MAX" : Math.floor(75 * Math.pow(1.8, state.rLvl));
+            if(isMaxRad) document.getElementById('btn-radius').disabled = true;
         }
 
-        function addMessage(txt) { msgQueue.push(txt); if(msgQueue.length === 1) processQueue(); }
-        function processQueue() {
-            if(msgQueue.length === 0) return;
-            const el = document.getElementById('notif'); el.innerText = msgQueue[0]; el.classList.add('animate-notif');
-            setTimeout(() => { el.classList.remove('animate-notif'); msgQueue.shift(); setTimeout(processQueue, 300); }, 2400);
+        function toggleUI() {
+            document.getElementById('ui').classList.toggle('ui-hidden');
+            document.getElementById('eyeBtn').classList.toggle('eye-off');
         }
-        function toggleUI() { document.getElementById('ui').classList.toggle('ui-hidden'); }
-        function save() { localStorage.setItem('pixel_vaccum_vMeme_final', JSON.stringify(state)); }
+        function save() { localStorage.setItem('pixel_vaccum_final_v20', JSON.stringify(state)); }
+
         function handlePointer(e) {
             const rect = canvas.getBoundingClientRect();
-            mouse.x = (e.clientX - rect.left); mouse.y = (e.clientY - rect.top);
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
         }
+
         window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); });
         window.addEventListener('pointermove', e => { handlePointer(e); });
         window.addEventListener('pointerup', () => mouse.down = false);

@@ -2,326 +2,286 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Vacuum Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Vacuum TMA</title>
+    <!-- Подключаем SDK Телеграма -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { 
-            --game-bg: #050505; 
-            --accent: #22d3ee; 
-            --gold: #facc15; 
-            --danger: #ef4444; 
-        }
-        
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; 
-            position: fixed; 
-            background-color: #1a1a1a; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: none;
-            overscroll-behavior: none;
-        }
-
-        #game-wrapper {
-            position: relative;
-            width: calc(100% - 24px);
-            height: calc(100% - 40px);
-            background: var(--game-bg);
-            border-radius: 28px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        body {
+            margin: 0;
+            padding: 0;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.08);
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            touch-action: none; /* Запрещает системный скролл */
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        canvas { display: block; width: 100%; height: 100%; }
-
-        .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; transition: opacity 0.3s; }
-        .ui-hidden { opacity: 0; }
-        
-        .top-bar { 
-            position: absolute; top: 15px; left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 15px; opacity: 0.6; 
-        }
-        .stat-card { 
-            background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); 
-            padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
-            min-width: 70px; text-align: center; color: white;
-        }
-        .stat-value { font-size: 14px; font-weight: 800; }
-
-        .controls { 
-            position: absolute; bottom: 20px; left: 0; right: 0;
-            display: flex; justify-content: center; gap: 12px; pointer-events: auto;
-            opacity: 0.5; transition: 0.3s;
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            pointer-events: none;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
         }
 
-        .btn {
-            width: 55px; height: 55px; border-radius: 50%; border: none;
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-            transition: 0.2s;
-        }
-        .btn:hover, .btn:active { opacity: 1; transform: scale(1.1); background: rgba(255,255,255,0.2); }
-        .btn-label { font-size: 7px; margin-top: 2px; font-weight: bold; }
-        .btn-price { font-size: 9px; color: var(--gold); }
-        .btn-turbo.active { background: var(--danger); box-shadow: 0 0 20px var(--danger); animation: pulse 0.5s infinite; }
-
-        .eye-btn {
-            position: absolute; top: 80px; right: 15px; width: 32px; height: 32px;
-            border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: white; display: flex; align-items: center; justify-content: center; 
-            pointer-events: auto; z-index: 100; opacity: 0.3; transition: 0.2s;
+        .stats-container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        #notification-container {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; width: 85%; pointer-events: none; z-index: 1000;
+        #progress-bar-container {
+            width: 80%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .notif { font-size: 28px; font-weight: 900; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.8); display: none; }
-        .animate-notif { display: block; animation: notifAnim 2s forwards; }
 
-        @keyframes notifAnim {
-            0% { transform: scale(0.4); opacity: 0; }
-            15% { transform: scale(1.15); opacity: 1; }
-            85% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.4); opacity: 0; }
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.3s ease;
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        #level-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            border: 2px solid #4caf50;
+        }
     </style>
 </head>
 <body>
-    <div id="game-wrapper">
-        <canvas id="gameCanvas"></canvas>
-        <div class="eye-btn" id="eyeBtn" onclick="toggleUI()">👁️</div>
-        <div id="ui" class="ui-layer">
-            <div class="top-bar">
-                <div class="stat-card"><div>LVL</div><div class="stat-value" id="lvl">1</div></div>
-                <div class="stat-card"><div>CLEARED</div><div class="stat-value"><span id="cleared">0</span>/<span id="total">0</span></div></div>
-                <div class="stat-card"><div>COINS</div><div class="stat-value" id="coins" style="color: #facc15">0</div></div>
-            </div>
-            <div class="controls">
-                <button class="btn" onclick="upgrade('power')" id="btn-power"><span>💪</span><div class="btn-label">СИЛА</div><div class="btn-price" id="p-price">50</div></button>
-                <button class="btn btn-turbo" onclick="activateTurbo()" id="btn-turbo"><span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">50</div></button>
-                <button class="btn" onclick="upgrade('radius')" id="btn-radius"><span>🔍</span><div class="btn-label">РАДИУС</div><div class="btn-price" id="r-price">75</div></button>
-            </div>
+
+    <div id="ui-layer">
+        <div class="stats-container">
+            Score: <span id="score">0</span> | Level: <span id="level">1</span>
         </div>
-        <div id="notification-container"><div id="notif" class="notif"></div></div>
+        <div id="progress-bar-container">
+            <div id="progress-fill"></div>
+        </div>
     </div>
+
+    <div id="level-complete">
+        <h2>Уровень Очищен!</h2>
+        <p>Чистота — залог здоровья.</p>
+        <button onclick="nextLevel()" style="padding: 10px 20px; border-radius: 10px; border: none; background: #4caf50; color: white; font-weight: bold;">Следующий уровень</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        tg.expand(); // Расширяем на весь экран Телеграма
 
-        const wrapper = document.getElementById('game-wrapper');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
-        const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa', '#f472b6', '#ffffff', '#ff9f1c', '#9b5de5', '#00f5d4'];
-        const MOTIVATION = ["Красота!", "Вау!", "Мощно!", "Мастер!", "Огонь! 🔥", "Идеально!"];
-        const WIN_PHRASES = ["БЛЕСК! ✨", "УБРАНО! 🧹", "ПОРЯДОК! ✅", "ЧИСТО! ✨"];
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const progressFill = document.getElementById('progress-fill');
+        const winScreen = document.getElementById('level-complete');
 
-        let state = JSON.parse(localStorage.getItem('pixel_vaccum_v22')) || {
-            level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 50
+        let width, height;
+        let score = 0;
+        let level = 1;
+        let particles = [];
+        let totalParticles = 0;
+        
+        const vacuum = {
+            x: 0,
+            y: 0,
+            radius: 40,
+            attractionRadius: 100, // Радиус, с которого начинает "тянуть"
+            speed: 0.15 // Плавность следования за пальцем
         };
 
-        let pixels = [], particles = [], floaters = [], isTurbo = false, isTransitioning = false;
-        let mouse = { x: -100, y: -100, down: false };
-        let lastFloaterTime = 0, msgQueue = [];
+        const target = { x: 0, y: 0 };
 
         function init() {
-            window.addEventListener('resize', resize);
-            resize(); spawnLevel(); requestAnimationFrame(loop);
-            document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+            resize();
+            spawnLevel();
+            animate();
+            
+            // Устанавливаем начальную позицию пылесоса в центр
+            vacuum.x = width / 2;
+            vacuum.y = height / 2;
+            target.x = width / 2;
+            target.y = height / 2;
         }
 
         function resize() {
-            const rect = wrapper.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        class Particle {
+            constructor(x, y, size, color, isBonus = false) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.isBonus = isBonus;
+                this.alive = true;
+                this.vx = 0;
+                this.vy = 0;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                if (this.isBonus) {
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                } else {
+                    ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+                }
+                ctx.fill();
+            }
+
+            update() {
+                const dx = vacuum.x - this.x;
+                const dy = vacuum.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < vacuum.attractionRadius) {
+                    // Эффект всасывания (магнетизм)
+                    const force = (vacuum.attractionRadius - distance) / vacuum.attractionRadius;
+                    this.x += (dx / distance) * force * 8;
+                    this.y += (dy / distance) * force * 8;
+
+                    // Если совсем близко - поглощаем
+                    if (distance < vacuum.radius) {
+                        this.alive = false;
+                        score += this.isBonus ? 10 : 1;
+                        scoreElement.innerText = score;
+                        
+                        // Вибрация в Telegram
+                        if (this.isBonus) {
+                            tg.HapticFeedback.impactOccurred('medium');
+                        } else if (score % 5 === 0) { // Вибрируем чуть-чуть не на каждом пикселе, чтобы не бесило
+                            tg.HapticFeedback.impactOccurred('light');
+                        }
+                        
+                        updateProgress();
+                    }
+                }
+            }
         }
 
         function spawnLevel() {
-            isTransitioning = false;
-            const count = Math.floor(50 * Math.pow(1.15, state.level - 1));
-            let colorLimit = Math.min(state.level, COLORS.length);
-            const availableColors = COLORS.slice(0, colorLimit);
-
-            pixels = [];
-            for(let i=0; i<count; i++) {
-                const isHeavy = state.level >= 7 && Math.random() < 0.15;
-                pixels.push({
-                    x: 30 + Math.random()*(canvas.width-60), y: 30 + Math.random()*(canvas.height-60),
-                    gold: state.level >= 5 && Math.random() < 0.03, heavy: isHeavy, mass: isHeavy ? 3 : 1,
-                    color: isHeavy ? '#4b5563' : availableColors[Math.floor(Math.random()*availableColors.length)]
-                });
-            }
-            document.getElementById('total').innerText = count;
-            updateUI();
-            addMessage(`УРОВЕНЬ ${state.level}`);
-        }
-
-        function addMessage(txt) {
-            msgQueue.push(txt);
-            if(msgQueue.length === 1) processQueue();
-        }
-
-        function processQueue() {
-            if(msgQueue.length === 0) return;
-            const el = document.getElementById('notif');
-            el.innerText = msgQueue[0];
-            el.classList.add('animate-notif');
-            setTimeout(() => {
-                el.classList.remove('animate-notif');
-                msgQueue.shift();
-                setTimeout(processQueue, 300);
-            }, 2400);
-        }
-
-        function loop() {
-            ctx.fillStyle = '#050505'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            let basePwr = 1.0 + Math.log10(state.pLvl + 1) * 1.0; 
-            const POWER_CAP = 10.0;
-            if (basePwr > POWER_CAP) basePwr = POWER_CAP;
-
-            let suctionMultiplier = isTurbo ? 1.8 : 1.0;
-            let currentRad = Math.min(50 + state.rLvl * 15, canvas.width * 0.22);
-            let rad = isTurbo ? currentRad * 1.3 : currentRad;
-            
-            if(mouse.down) {
-                ctx.beginPath();
-                let grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, rad);
-                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 211, 238, 0.1)');
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
-            }
-
-            for(let i = pixels.length - 1; i >= 0; i--) {
-                let p = pixels[i];
-                let dx = mouse.x - p.x, dy = mouse.y - p.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-
-                if(mouse.down && dist < rad) {
-                    let speed = (basePwr * suctionMultiplier / p.mass) * 0.1;
-                    let swirlAmount = isTurbo ? 0.5 : 0.3; 
-                    let vx = (dx / dist) + (-dy / dist) * swirlAmount;
-                    let vy = (dy / dist) + (dx / dist) * swirlAmount;
-                    
-                    let step = Math.min(dist * speed, 12);
-                    p.x += vx * step; 
-                    p.y += vy * step;
-
-                    if(dist < 8) {
-                        state.coins += p.gold ? 3 : 1;
-                        if(tg.HapticFeedback && Math.random() < 0.2) tg.HapticFeedback.impactOccurred('light');
-                        pixels.splice(i, 1);
-                        updateUI();
-                        if(pixels.length === 0) winLevel();
-                        continue;
+            particles = [];
+            const step = 20; // Плотность пикселей
+            for (let x = step; x < width; x += step) {
+                for (let y = 100; y < height - 50; y += step) {
+                    if (Math.random() > 0.2) {
+                        const isBonus = Math.random() > 0.98;
+                        const size = isBonus ? 8 : 4;
+                        const color = isBonus ? '#ffd700' : `hsl(${Math.random() * 360}, 50%, 60%)`;
+                        particles.push(new Particle(x, y, size, color, isBonus));
                     }
                 }
-                ctx.fillStyle = p.gold ? '#facc15' : p.color;
-                ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
-
-            for(let i = floaters.length - 1; i >= 0; i--) {
-                let f = floaters[i]; f.y -= 0.8; f.life -= 0.015;
-                if(f.life <= 0) floaters.splice(i, 1);
-                else { ctx.globalAlpha = f.life; ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign="center"; ctx.fillText(f.txt, f.x, f.y); }
-            }
-            for(let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.4; p.life -= 0.015;
-                if(p.life <= 0) particles.splice(i, 1);
-                else { ctx.globalAlpha = p.life; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 5, 5); }
-            }
-            ctx.globalAlpha = 1;
-            requestAnimationFrame(loop);
+            totalParticles = particles.length;
+            updateProgress();
         }
 
-        function winLevel() {
-            if(isTransitioning) return;
-            isTransitioning = true;
-            addMessage(WIN_PHRASES[(state.level - 1) % WIN_PHRASES.length]);
-            for(let i=0; i<150; i++) {
-                particles.push({ x: canvas.width/2, y: canvas.height/2, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20, life: 1.2, c: `hsl(${Math.random()*360}, 80%, 60%)` });
-            }
-            setTimeout(() => { state.level++; save(); spawnLevel(); }, 2500);
-        }
+        function updateProgress() {
+            const currentCount = particles.length;
+            const cleaned = totalParticles - currentCount;
+            const percent = (cleaned / totalParticles) * 100;
+            progressFill.style.width = percent + '%';
 
-        function upgrade(type) {
-            let cost = type === 'power' ? 50 * Math.pow(1.9, state.pLvl) : 75 * Math.pow(2.5, state.rLvl);
-            if(state.coins >= cost) {
-                state.coins -= Math.floor(cost);
-                if(type === 'power') state.pLvl++; else state.rLvl++;
-                save(); updateUI();
+            if (percent > 98 && winScreen.style.display !== 'block') {
+                winScreen.style.display = 'block';
+                tg.HapticFeedback.notificationOccurred('success');
             }
         }
 
-        function activateTurbo() {
-            if(state.coins >= state.tPrice && !isTurbo) {
-                state.coins -= state.tPrice;
-                state.tPrice = Math.floor(state.tPrice * 1.8);
-                isTurbo = true;
-                document.getElementById('btn-turbo').classList.add('active');
-                addMessage("УРАГАН! 🌪️");
-                setTimeout(() => { isTurbo = false; document.getElementById('btn-turbo').classList.remove('active'); }, 5000);
-                save(); updateUI();
-            }
+        function nextLevel() {
+            level++;
+            levelElement.innerText = level;
+            winScreen.style.display = 'none';
+            spawnLevel();
         }
 
-        function updateUI() {
-            document.getElementById('lvl').innerText = state.level;
-            document.getElementById('coins').innerText = Math.floor(state.coins);
-            document.getElementById('cleared').innerText = document.getElementById('total').innerText - pixels.length;
-            document.getElementById('t-price').innerText = state.tPrice;
+        // Управление (Touch и Mouse)
+        function handleMove(e) {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            target.x = clientX;
+            target.y = clientY;
+        }
 
-            // ИСЧЕЗНОВЕНИЕ КНОПКИ СИЛЫ ПРИ МАКСИМУМЕ (10.0)
-            let currentPwr = 1.0 + Math.log10(state.pLvl + 1) * 1.0;
-            const pBtn = document.getElementById('btn-power');
-            if (currentPwr >= 10.0) {
-                pBtn.style.display = 'none';
-            } else {
-                pBtn.style.display = 'flex';
-                document.getElementById('p-price').innerText = Math.floor(50 * Math.pow(1.9, state.pLvl));
-            }
+        window.addEventListener('touchmove', (e) => {
+            handleMove(e);
+            e.preventDefault(); // Запрещаем скролл страницы
+        }, { passive: false });
 
-            document.getElementById('btn-turbo').style.visibility = (state.level % 3 === 0) ? 'visible' : 'hidden';
+        window.addEventListener('mousemove', handleMove);
+
+        function animate() {
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, width, height);
+
+            // Плавное движение пылесоса за курсором/пальцем
+            vacuum.x += (target.x - vacuum.x) * vacuum.speed;
+            vacuum.y += (target.y - vacuum.y) * vacuum.speed;
+
+            // Рисуем пылесос (визуальный эффект воронки)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(vacuum.x, vacuum.y, vacuum.radius, 0, Math.PI * 2);
+            ctx.stroke();
             
-            let isMaxRad = (50 + state.rLvl * 15) >= wrapper.clientWidth * 0.22;
-            const rBtn = document.getElementById('btn-radius');
-            if (isMaxRad) {
-                rBtn.style.display = 'none';
-            } else {
-                rBtn.style.display = 'flex';
-                document.getElementById('r-price').innerText = Math.floor(75 * Math.pow(2.5, state.rLvl));
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.arc(vacuum.x, vacuum.y, vacuum.attractionRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Обновляем и рисуем частицы
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].alive) {
+                    particles[i].draw();
+                } else {
+                    particles.splice(i, 1);
+                }
             }
+
+            requestAnimationFrame(animate);
         }
 
-        function toggleUI() {
-            document.getElementById('ui').classList.toggle('ui-hidden');
-        }
-        function save() { localStorage.setItem('pixel_vaccum_v22', JSON.stringify(state)); }
+        window.addEventListener('resize', resize);
+        init();
 
-        function handlePointer(e) {
-            const rect = canvas.getBoundingClientRect();
-            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            mouse.x = x; mouse.y = y;
-        }
-
-        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); });
-        window.addEventListener('pointermove', e => { handlePointer(e); });
-        window.addEventListener('pointerup', () => mouse.down = false);
-        window.onload = init;
     </script>
 </body>
 </html>

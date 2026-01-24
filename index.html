@@ -188,8 +188,6 @@
             ctx.fillStyle = '#050505'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // ЗАМЕДЛЕННЫЙ ПРИРОСТ СИЛЫ (ЛОГАРИФМИЧЕСКИЙ)
-            // Множитель 1.0 вместо 3.0 делает прогрессию очень плавной
             let basePwr = 1.0 + Math.log10(state.pLvl + 1) * 1.0; 
             const POWER_CAP = 10.0;
             if (basePwr > POWER_CAP) basePwr = POWER_CAP;
@@ -218,7 +216,6 @@
                     let vx = (dx / dist) + (-dy / dist) * swirlAmount;
                     let vy = (dy / dist) + (dx / dist) * swirlAmount;
                     
-                    // ЖЕСТКИЙ ЛИМИТ НА СКОРОСТЬ ПОДЛЕТА (CAP)
                     let step = Math.min(dist * speed, 12);
                     p.x += vx * step; 
                     p.y += vy * step;
@@ -236,7 +233,6 @@
                 ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
 
-            // Отрисовка частиц и текста
             for(let i = floaters.length - 1; i >= 0; i--) {
                 let f = floaters[i]; f.y -= 0.8; f.life -= 0.015;
                 if(f.life <= 0) floaters.splice(i, 1);
@@ -262,7 +258,6 @@
         }
 
         function upgrade(type) {
-            // ЭКСПОНЕНЦИАЛЬНЫЙ РОСТ ЦЕН
             let cost = type === 'power' ? 50 * Math.pow(1.9, state.pLvl) : 75 * Math.pow(2.5, state.rLvl);
             if(state.coins >= cost) {
                 state.coins -= Math.floor(cost);
@@ -287,17 +282,24 @@
             document.getElementById('lvl').innerText = state.level;
             document.getElementById('coins').innerText = Math.floor(state.coins);
             document.getElementById('cleared').innerText = document.getElementById('total').innerText - pixels.length;
-            document.getElementById('p-price').innerText = Math.floor(50 * Math.pow(1.9, state.pLvl));
             document.getElementById('t-price').innerText = state.tPrice;
 
-            // ТУРБО-КНОПКА ТОЛЬКО НА УРОВНЯХ КРАТНЫХ 3
+            // ИСЧЕЗНОВЕНИЕ КНОПКИ СИЛЫ ПРИ МАКСИМУМЕ (10.0)
+            let currentPwr = 1.0 + Math.log10(state.pLvl + 1) * 1.0;
+            const pBtn = document.getElementById('btn-power');
+            if (currentPwr >= 10.0) {
+                pBtn.style.display = 'none';
+            } else {
+                pBtn.style.display = 'flex';
+                document.getElementById('p-price').innerText = Math.floor(50 * Math.pow(1.9, state.pLvl));
+            }
+
             document.getElementById('btn-turbo').style.visibility = (state.level % 3 === 0) ? 'visible' : 'hidden';
             
-            // ИСЧЕЗНОВЕНИЕ КНОПКИ РАДИУСА ПРИ МАКСИМУМЕ
             let isMaxRad = (50 + state.rLvl * 15) >= wrapper.clientWidth * 0.22;
             const rBtn = document.getElementById('btn-radius');
             if (isMaxRad) {
-                rBtn.style.display = 'none'; // Полное удаление из UI
+                rBtn.style.display = 'none';
             } else {
                 rBtn.style.display = 'flex';
                 document.getElementById('r-price').innerText = Math.floor(75 * Math.pow(2.5, state.rLvl));

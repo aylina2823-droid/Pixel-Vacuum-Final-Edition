@@ -3,351 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Vacuum: Pro Edition</title>
+    <title>Pixel Vacuum: Smooth Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Интеграция с темой Telegram */
-            --bg-color: var(--tg-theme-bg-color, #ffffff);
-            --text-color: var(--tg-theme-text-color, #000000);
-            --hint-color: var(--tg-theme-hint-color, #999999);
-            --button-color: var(--tg-theme-button-color, #2481cc);
-            --button-text: var(--tg-theme-button-text-color, #ffffff);
-            --accent: #22d3ee;
+            --tg-bg: var(--tg-theme-bg-color, #1a1a1a);
+            --tg-text: var(--tg-theme-text-color, #ffffff);
+            --tg-hint: var(--tg-theme-hint-color, #aaaaaa);
+            --tg-link: var(--tg-theme-link-color, #2481cc);
             --gold: #facc15;
             --danger: #ef4444;
+            --ice: #3b82f6;
         }
 
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
-            touch-action: none; /* Блокировка системных жестов */
+            touch-action: none;
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; position: fixed;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: var(--tg-bg) !important;
+            color: var(--tg-text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overscroll-behavior: none; /* Запрет bounce-эффекта */
+            overscroll-behavior: none;
         }
 
-        #game-wrapper {
+        #game-container {
             position: relative;
-            width: calc(100% - 20px);
-            height: calc(100% - 140px);
-            background: #050505; /* Внутреннее поле всегда темное для контраста пикселей */
-            border-radius: 24px;
-            overflow: hidden;
-            border: 2px solid var(--button-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
+            width: 100%;
+            height: calc(100% - 130px);
+            background: #000;
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
-        .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
-        
-        /* Верхняя панель */
-        .top-bar {
-            position: absolute; top: 15px; left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 15px;
+        /* Stats */
+        .stats-top {
+            position: absolute; top: 20px; left: 0; right: 0;
+            display: flex; justify-content: space-between; padding: 0 25px;
+            pointer-events: none; z-index: 10;
         }
-        .stat-card {
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            padding: 8px; border-radius: 12px; min-width: 80px; text-align: center;
-        }
-        .stat-label { font-size: 9px; text-transform: uppercase; opacity: 0.8; color: #eee; }
-        .stat-value { font-size: 16px; font-weight: 800; color: #fff; }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 10px; color: var(--tg-hint); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-val { font-size: 20px; font-weight: 800; }
 
-        /* Контроллеры */
-        .controls {
-            display: flex; justify-content: center; gap: 10px; padding: 10px; width: 100%;
-            pointer-events: auto;
+        /* Heat Bar */
+        .heat-container {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            width: 140px; height: 4px; background: rgba(255,255,255,0.1);
+            border-radius: 2px; overflow: hidden; pointer-events: none;
         }
-        .btn {
-            flex: 1; max-width: 110px; height: 75px; border-radius: 16px; border: none;
-            background: var(--button-color); color: var(--button-text);
+        #heat-fill { width: 0%; height: 100%; background: var(--danger); transition: width 0.15s; }
+        #heat-fill.cooling { background: var(--tg-link); animation: pulse 0.5s infinite; }
+        #heat-fill.frozen { background: var(--ice); box-shadow: 0 0 10px var(--ice); }
+
+        /* Controls */
+        .bottom-bar {
+            height: 130px; display: flex; justify-content: center; align-items: center;
+            gap: 20px; padding-bottom: 20px; background: var(--tg-bg);
+        }
+        .btn-circle {
+            width: 68px; height: 68px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: transform 0.1s, opacity 0.2s; position: relative;
+            border: 2px solid transparent; transition: all 0.2s ease;
+            cursor: pointer; position: relative;
         }
-        .btn:active { transform: scale(0.95); }
-        .btn:disabled { opacity: 0.5; filter: grayscale(1); }
+        .btn-circle.locked { opacity: 0.3; filter: grayscale(1); }
+        .btn-circle.affordable { opacity: 1; border-color: var(--gold); }
+        .btn-circle.active-mode { border-color: var(--danger); box-shadow: 0 0 15px var(--danger); }
         
-        .btn-lvl { font-size: 9px; font-weight: bold; position: absolute; top: 5px; opacity: 0.9; }
-        .btn-label { font-size: 10px; font-weight: 900; margin-top: 15px; }
-        .btn-price { font-size: 11px; font-weight: bold; color: var(--gold); }
-        
-        .locked { background: #444 !important; }
+        .btn-icon { font-size: 26px; }
+        .btn-price { font-size: 10px; font-weight: bold; margin-top: 2px; color: var(--gold); }
+        .lvl-badge { 
+            position: absolute; top: -2px; right: -2px; 
+            background: var(--tg-link); color: white; font-size: 10px; 
+            padding: 2px 6px; border-radius: 10px; font-weight: 800;
+        }
 
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        
         #notif {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            color: white; font-weight: 900; font-size: 28px; pointer-events: none; z-index: 100; display: none;
-            text-shadow: 0 0 15px rgba(0,0,0,0.8);
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 100; font-weight: 900; font-size: 28px;
+            color: #fff; text-shadow: 0 0 15px rgba(0,0,0,0.8); display: none;
         }
-        .animate-notif { display: block; animation: notifAnim 1.5s forwards; }
-        @keyframes notifAnim { 0% { opacity:0; scale:0.5; } 20% { opacity:1; scale:1.1; } 100% { opacity:0; transform: translate(-50%, -100%); } }
+        .animate-pop { display: block; animation: pop 1.5s forwards; }
+        @keyframes pop { 0% { scale: 0.8; opacity: 0; } 20% { scale: 1; opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -100%); } }
     </style>
 </head>
 <body>
-    <div id="game-wrapper">
-        <canvas id="gameCanvas"></canvas>
-        <div id="ui" class="ui-layer">
-            <div class="top-bar">
-                <div class="stat-card"><div class="stat-label">COINS</div><div class="stat-value" id="coins-val">0</div></div>
-                <div class="stat-card"><div class="stat-label">BAG</div><div class="stat-value" id="bag-val">0%</div></div>
-            </div>
-        </div>
-        <div id="notif"></div>
+
+<div id="game-container">
+    <div class="stats-top">
+        <div class="stat-box"><div class="stat-label">COINS</div><div class="stat-val" id="coins-display" style="color: var(--gold)">0</div></div>
+        <div class="stat-box"><div class="stat-label">BEST COMBO</div><div class="stat-val" id="best-combo-display">0</div></div>
     </div>
 
-    <div class="controls">
-        <button class="btn" onclick="upgrade('power')" id="btn-power">
-            <div class="btn-lvl" id="p-lvl">Lvl 0/20</div>
-            <div class="btn-label" id="p-label">POWER</div>
-            <div class="btn-price" id="p-price">50</div>
-        </button>
-        <button class="btn locked" onclick="activateTurbo()" id="btn-turbo">
-            <div class="btn-lvl" id="t-lvl">Lvl 0/10</div>
-            <div class="btn-label">TURBO</div>
-            <div class="btn-price" id="t-price">LOCKED</div>
-        </button>
-        <button class="btn" onclick="upgrade('radius')" id="btn-radius">
-            <div class="btn-lvl" id="r-lvl">Lvl 0/15</div>
-            <div class="btn-label" id="r-label">RADIUS</div>
-            <div class="btn-price" id="r-price">75</div>
-        </button>
+    <div class="heat-container"><div id="heat-fill"></div></div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="notif"></div>
+</div>
+
+<div class="bottom-bar">
+    <div class="btn-circle" onclick="upgrade('power')" id="btn-power">
+        <div class="lvl-badge" id="p-lvl">0</div>
+        <span class="btn-icon">💪</span>
+        <div class="btn-price" id="p-price">50</div>
     </div>
+    <div class="btn-circle" onclick="startTurbo()" id="btn-turbo">
+        <span class="btn-icon">⚡</span>
+        <div class="btn-price">200</div>
+    </div>
+    <div class="btn-circle" onclick="upgrade('radius')" id="btn-radius">
+        <div class="lvl-badge" id="r-lvl">0</div>
+        <span class="btn-icon">🔍</span>
+        <div class="btn-price" id="r-price">75</div>
+    </div>
+</div>
 
-    <script>
-        // --- Telegram Integration ---
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // --- State ---
+    let state = JSON.parse(localStorage.getItem('pixel_vac_v6')) || {
+        coins: 0, pLvl: 0, rLvl: 0, bestCombo: 0
+    };
 
-        // --- Hard Caps ---
-        const MAX_PWR = 20;
-        const MAX_RAD = 15;
-        const MAX_TRB = 10;
-        const OFFSET_Y = 70;
+    const OFFSET_Y = 80;
+    const MAX_RAD = 120;
+    const MAX_PWR_LVL = 15;
+    const MAX_RAD_LVL = 15;
+    const TURBO_COST = 200;
 
-        let state = JSON.parse(localStorage.getItem('pixel_vac_v4')) || {
-            coins: 0, pLvl: 0, rLvl: 0, tLvl: 0, tPrice: 200, magnetPwr: 1
-        };
+    let pixels = [], clumps = [], snowflake = null;
+    let mouse = { x: -100, y: -100, down: false };
+    let heat = 0, isOverheated = false, iceMode = 0, turboTime = 0;
+    let combo = 0, comboTimer = 0;
+    let lastTime = performance.now();
 
-        let pixels = [], clumps = [], mouse = { x: -100, y: -100, down: false };
-        let lastTime = performance.now(), spawnAcc = 0, isTurbo = false, bagFill = 0;
+    function haptic(type = 'medium') {
+        tg.HapticFeedback.impactOccurred(type);
+    }
 
-        function haptic(style = 'medium') {
-            try {
-                tg.HapticFeedback.impactOccurred(style);
-            } catch(e) {
-                if(navigator.vibrate) navigator.vibrate(50);
-            }
+    function init() {
+        window.addEventListener('resize', resize);
+        resize();
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        for(let i=0; i<80; i++) spawnPixel();
+        requestAnimationFrame(loop);
+    }
+
+    function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+
+    function spawnPixel() {
+        pixels.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: 0, vy: 0,
+            color: ['#22d3ee', '#4ade80', '#fb7185', '#facc15'][Math.floor(Math.random() * 4)],
+            size: 3 + Math.random() * 2
+        });
+    }
+
+    function spawnClump() {
+        clumps.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            life: 2.2, // Время всасывания будет зависеть от силы
+            parts: Array.from({length: 8}, () => ({ dx: Math.random()*14-7, dy: Math.random()*14-7 }))
+        });
+    }
+
+    function spawnSnowflake() {
+        snowflake = { x: 50 + Math.random()*(canvas.width-100), y: 50 + Math.random()*(canvas.height-100), life: 7 };
+    }
+
+    function upgrade(type) {
+        if(type === 'power' && state.pLvl < MAX_PWR_LVL) {
+            let cost = Math.floor(50 * Math.pow(1.7, state.pLvl));
+            if(state.coins >= cost) { state.coins -= cost; state.pLvl++; haptic('light'); }
+        } else if(type === 'radius' && state.rLvl < MAX_RAD_LVL) {
+            let cost = Math.floor(75 * Math.pow(1.8, state.rLvl));
+            if(state.coins >= cost) { state.coins -= cost; state.rLvl++; haptic('light'); }
         }
+        save();
+    }
 
-        function init() {
-            window.addEventListener('resize', resize);
-            resize();
-            // Блокировка свайпа через JS
-            document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-            for(let i=0; i<60; i++) spawnPixel();
-            requestAnimationFrame(loop);
-        }
-
-        function resize() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width; canvas.height = rect.height;
-        }
-
-        function spawnPixel() {
-            pixels.push({
-                x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-                c: ['#22d3ee', '#4ade80', '#fb7185', '#facc15'][Math.floor(Math.random()*4)]
-            });
-        }
-
-        function spawnClump() {
-            const size = 6;
-            const clump = {
-                x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-                life: 1.8, active: false, 
-                parts: Array.from({length: size}, () => ({dx: Math.random()*12-6, dy: Math.random()*12-6}))
-            };
-            clumps.push(clump);
-        }
-
-        function upgrade(type) {
-            if(type === 'power') {
-                if(state.pLvl >= MAX_PWR) return;
-                let cost = Math.floor(50 * Math.pow(1.5, state.pLvl));
-                if(state.coins >= cost) {
-                    state.coins -= cost; state.pLvl++;
-                    haptic('light');
-                }
-            } else if(type === 'radius') {
-                if(state.rLvl >= MAX_RAD) {
-                    // Магнетизм
-                    let cost = 500 * state.magnetPwr;
-                    if(state.coins >= cost) {
-                        state.coins -= cost; state.magnetPwr++;
-                        haptic('light');
-                    }
-                } else {
-                    let cost = Math.floor(75 * Math.pow(1.6, state.rLvl));
-                    if(state.coins >= cost) {
-                        state.coins -= cost; state.rLvl++;
-                        haptic('light');
-                    }
-                }
-            }
+    function startTurbo() {
+        if(state.coins >= TURBO_COST && turboTime <= 0) {
+            state.coins -= TURBO_COST;
+            turboTime = 6.0; // 6 секунд Турбо
+            haptic('medium');
+            showNotif("TURBO ACTIVE!");
             save();
         }
+    }
 
-        function activateTurbo() {
-            if(state.pLvl < MAX_PWR || isTurbo) return;
-            isTurbo = true;
-            haptic('medium');
-            addMessage("TURBO ACTIVATED!");
-            let duration = 3000 + (state.tLvl * 500);
-            setTimeout(() => isTurbo = false, duration);
+    function loop(t) {
+        const dt = (t - lastTime) / 1000;
+        lastTime = t;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const tx = mouse.x, ty = mouse.y - OFFSET_Y;
+        const currentRad = Math.min(55 + (state.rLvl * 5), MAX_RAD);
+        
+        // Кривая силы: более плавная (от 1.0 до ~3.5 на 15 уровне)
+        let currentPwr = (1 + state.pLvl * 0.18);
+        if (turboTime > 0) {
+            currentPwr *= 1.5;
+            turboTime -= dt;
         }
 
-        function loop(t) {
-            const dt = (t - lastTime) / 1000;
-            lastTime = t;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // --- Heat Logic ---
+        if (mouse.down && !isOverheated) {
+            if (iceMode > 0) iceMode -= dt;
+            else heat = Math.min(100, heat + dt * 12); // В 2 раза медленнее (было 25)
 
-            const tx = mouse.x, ty = mouse.y - OFFSET_Y;
-            const rad = 50 + (state.rLvl * 8);
-            const pwr = (1 + state.pLvl * 0.5) * (isTurbo ? 2 : 1) * state.magnetPwr;
+            if (heat >= 100) {
+                isOverheated = true;
+                haptic('heavy');
+                setTimeout(() => { isOverheated = false; heat = 0; }, 3000);
+            }
+        } else {
+            heat = Math.max(0, heat - dt * 35);
+        }
 
-            spawnAcc += dt;
-            if(spawnAcc > 0.5) {
-                if(pixels.length < 120) spawnPixel();
-                if(Math.random() < 0.1 && clumps.length < 2) spawnClump();
-                spawnAcc = 0;
+        // --- Snowflake & Combo ---
+        if (!snowflake && Math.random() < 0.001) spawnSnowflake();
+        if (comboTimer > 0) {
+            comboTimer -= dt;
+            if (comboTimer <= 0) {
+                if (combo > state.bestCombo) { state.bestCombo = combo; save(); }
+                combo = 0;
+            }
+        }
+
+        // --- Drawing Radius ---
+        if (mouse.down && !isOverheated) {
+            const grad = ctx.createRadialGradient(tx, ty, 0, tx, ty, currentRad);
+            let rCol = iceMode > 0 ? '59, 130, 246' : (turboTime > 0 ? '239, 68, 68' : '255, 255, 255');
+            grad.addColorStop(0, `rgba(${rCol}, 0.15)`);
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(tx, ty, currentRad, 0, Math.PI*2); ctx.fill();
+        }
+
+        // --- Pixels Physics (Max Velocity & Damping) ---
+        for(let i=pixels.length-1; i>=0; i--) {
+            let p = pixels[i];
+            let dx = tx - p.x, dy = ty - p.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+
+            if(mouse.down && !isOverheated && dist < currentRad) {
+                let pull = (1 - dist / currentRad) * currentPwr * 1.2;
+                p.vx += (dx / dist) * pull;
+                p.vy += (dy / dist) * pull;
             }
 
-            // Визуал радиуса
-            if(mouse.down) {
-                ctx.beginPath();
-                ctx.arc(tx, ty, rad, 0, Math.PI*2);
-                ctx.fillStyle = isTurbo ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 211, 238, 0.1)';
-                ctx.fill();
+            // Трение (Вязкость)
+            p.vx *= 0.88;
+            p.vy *= 0.88;
+
+            // Лимит скорости
+            const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+            const maxV = 15;
+            if(speed > maxV) {
+                p.vx = (p.vx / speed) * maxV;
+                p.vy = (p.vy / speed) * maxV;
             }
 
-            // Пиксели
-            for(let i=pixels.length-1; i>=0; i--) {
-                let p = pixels[i];
-                let dx = tx - p.x, dy = ty - p.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if(mouse.down && dist < rad) {
-                    let speed = Math.min(dist * 0.1 * pwr, 15);
-                    p.x += (dx/dist) * speed; p.y += (dy/dist) * speed;
-                    if(dist < 10) { 
-                        state.coins += 1; bagFill = Math.min(100, bagFill + 0.1);
-                        pixels.splice(i, 1); 
-                    }
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if(dist < 10 && mouse.down && !isOverheated) {
+                state.coins++; pixels.splice(i, 1);
+                combo++; comboTimer = 1.2;
+                if(pixels.length < 60) spawnPixel();
+                continue;
+            }
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
+
+        // --- Clumps ---
+        if (Math.random() < 0.008 && clumps.length < 3) spawnClump();
+        for(let i=clumps.length-1; i>=0; i--) {
+            let c = clumps[i];
+            let dx = tx - c.x, dy = ty - c.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+
+            if(mouse.down && !isOverheated && dist < currentRad) {
+                // На 15 уровне засасывает за ~1.8 сек (life 2.2 / pwr 1.2)
+                c.life -= dt * (currentPwr * 0.5);
+                c.x += (dx/dist) * 1.5; c.y += (dy/dist) * 1.5;
+                c.x += (Math.random()-0.5)*3; 
+                if(c.life <= 0) {
+                    state.coins += 12; clumps.splice(i, 1);
+                    haptic('medium'); combo += 3; comboTimer = 1.2;
+                    continue;
                 }
-                ctx.fillStyle = p.c; ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
-
-            // Комки
-            for(let i=clumps.length-1; i>=0; i--) {
-                let c = clumps[i];
-                let dx = tx - c.x, dy = ty - c.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if(mouse.down && dist < rad) {
-                    if(!c.active) { c.active = true; haptic('medium'); }
-                    c.life -= dt;
-                    // Тряска
-                    c.x += (Math.random()-0.5)*5; c.y += (Math.random()-0.5)*5;
-                    // Всасывание центра
-                    c.x += (dx/dist) * 2; c.y += (dy/dist) * 2;
-                    if(c.life <= 0) {
-                        state.coins += 20; bagFill = Math.min(100, bagFill + 2);
-                        haptic('medium'); clumps.splice(i, 1); continue;
-                    }
-                } else { c.active = false; }
-                
-                ctx.fillStyle = '#777';
-                c.parts.forEach(p => ctx.fillRect(c.x+p.dx, c.y+p.dy, 5, 5));
-            }
-
-            updateUI();
-            requestAnimationFrame(loop);
+            ctx.fillStyle = '#777';
+            c.parts.forEach(p => ctx.fillRect(c.x + p.dx, c.y + p.dy, 5, 5));
         }
 
-        function updateUI() {
-            document.getElementById('coins-val').innerText = Math.floor(state.coins);
-            document.getElementById('bag-val').innerText = Math.floor(bagFill) + '%';
-
-            // Power
-            const pLvlTxt = document.getElementById('p-lvl');
-            const pBtn = document.getElementById('btn-power');
-            pLvlTxt.innerText = `Lvl ${state.pLvl}/${MAX_PWR}`;
-            if(state.pLvl >= MAX_PWR) {
-                document.getElementById('p-label').innerText = "MAX POWER";
-                document.getElementById('p-price').innerText = "READY";
-            } else {
-                let cost = Math.floor(50 * Math.pow(1.5, state.pLvl));
-                document.getElementById('p-price').innerText = cost;
-                pBtn.disabled = state.coins < cost;
-            }
-
-            // Radius / Magnetism
-            const rLvlTxt = document.getElementById('r-lvl');
-            const rBtn = document.getElementById('btn-radius');
-            if(state.rLvl >= MAX_RAD) {
-                rLvlTxt.innerText = `Magnet: Lvl ${state.magnetPwr}`;
-                document.getElementById('r-label').innerText = "MAGNETISM";
-                let mCost = 500 * state.magnetPwr;
-                document.getElementById('r-price').innerText = mCost;
-                rBtn.disabled = state.coins < mCost;
-            } else {
-                rLvlTxt.innerText = `Lvl ${state.rLvl}/${MAX_RAD}`;
-                let cost = Math.floor(75 * Math.pow(1.6, state.rLvl));
-                document.getElementById('r-price').innerText = cost;
-                rBtn.disabled = state.coins < cost;
-            }
-
-            // Turbo
-            const tBtn = document.getElementById('btn-turbo');
-            if(state.pLvl >= MAX_PWR) {
-                tBtn.classList.remove('locked');
-                document.getElementById('t-price').innerText = isTurbo ? "ACTIVE" : "USE";
-            }
+        // Snowflake
+        if (snowflake) {
+            snowflake.life -= dt;
+            const dpx = tx - snowflake.x, dpy = ty - snowflake.y;
+            if (mouse.down && Math.sqrt(dpx*dpx + dpy*dpy) < 30) {
+                snowflake = null; iceMode = 5.0; heat = 0;
+                haptic('medium'); showNotif("ICE MODE!");
+            } else if (snowflake.life <= 0) snowflake = null;
+            else { ctx.font = "24px serif"; ctx.fillText("❄️", snowflake.x, snowflake.y); }
         }
 
-        function addMessage(txt) {
-            const el = document.getElementById('notif');
-            el.innerText = txt; el.classList.remove('animate-notif');
-            void el.offsetWidth; el.classList.add('animate-notif');
+        updateUI();
+        requestAnimationFrame(loop);
+    }
+
+    function updateUI() {
+        document.getElementById('coins-display').innerText = Math.floor(state.coins);
+        document.getElementById('best-combo-display').innerText = state.bestCombo;
+        
+        const hFill = document.getElementById('heat-fill');
+        hFill.style.width = heat + '%';
+        hFill.className = isOverheated ? 'cooling' : (iceMode > 0 ? 'frozen' : '');
+
+        // Buttons Upgrade
+        updateBtn('power', state.pLvl, MAX_PWR_LVL, 50, 1.7);
+        updateBtn('radius', state.rLvl, MAX_RAD_LVL, 75, 1.8);
+        
+        // Turbo Button Logic
+        const tBtn = document.getElementById('btn-turbo');
+        if (turboTime > 0) {
+            tBtn.className = 'btn-circle active-mode';
+        } else {
+            tBtn.className = state.coins >= TURBO_COST ? 'btn-circle affordable' : 'btn-circle locked';
         }
+    }
 
-        function save() { localStorage.setItem('pixel_vac_v4', JSON.stringify(state)); }
+    function updateBtn(id, lvl, max, base, factor) {
+        const btn = document.getElementById('btn-' + id);
+        const price = Math.floor(base * Math.pow(factor, lvl));
+        const pEl = document.getElementById(id[0] + '-price');
+        const lEl = document.getElementById(id[0] + '-lvl');
 
-        function handlePointer(e) {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            mouse.x = clientX - rect.left;
-            mouse.y = clientY - rect.top;
+        lEl.innerText = lvl;
+        if(lvl >= max) {
+            btn.className = 'btn-circle affordable';
+            pEl.innerText = 'MAX';
+        } else {
+            pEl.innerText = price;
+            btn.className = state.coins >= price ? 'btn-circle affordable' : 'btn-circle locked';
         }
+    }
 
-        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); });
-        window.addEventListener('pointermove', e => { handlePointer(e); });
-        window.addEventListener('pointerup', () => { mouse.down = false; save(); });
+    function showNotif(msg) {
+        const el = document.getElementById('notif');
+        el.innerText = msg; el.className = 'animate-pop';
+        setTimeout(() => el.className = '', 1500);
+    }
 
-        init();
-    </script>
+    function save() { localStorage.setItem('pixel_vac_v6', JSON.stringify(state)); }
+
+    function handleInput(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        mouse.x = x; mouse.y = y;
+    }
+    window.addEventListener('pointerdown', e => { mouse.down = true; handleInput(e); });
+    window.addEventListener('pointermove', handleInput);
+    window.addEventListener('pointerup', () => mouse.down = false);
+    init();
+</script>
 </body>
 </html>

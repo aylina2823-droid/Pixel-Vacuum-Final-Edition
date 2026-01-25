@@ -3,105 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Vacuum Pro</title>
+    <title>Pixel Vacuum Pro: Prestige</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { 
-            --game-bg: #050505; 
-            --accent: #22d3ee; 
-            --gold: #facc15; 
-            --danger: #ef4444; 
-            /* Эти переменные будут перезаписаны из JS */
-            --tg-bg: #000000;
-            --tg-text: #ffffff;
+        :root {
+            --game-bg: #050505;
+            --accent: #22d3ee;
+            --gold: #facc15;
+            --danger: #ef4444;
+            --tg-bg: #000;
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            user-select: none; 
-            outline: none; 
-            touch-action: none; /* Отключаем все системные жесты на элементах */
-        }
-
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; position: fixed; 
-            background-color: var(--tg-bg); /* Цвет фона за пределами игры */
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: none;
             overscroll-behavior: none;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; position: fixed;
+            background-color: var(--tg-bg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         #game-wrapper {
             position: relative;
-            width: calc(100% - 24px);
-            /* Уменьшаем высоту и поднимаем выше для безопасности */
-            height: calc(100% - 120px); 
-            margin-top: -20px;
+            width: calc(100% - 20px);
+            height: calc(100% - 100px);
             background: var(--game-bg);
-            border-radius: 28px;
+            border-radius: 32px;
             overflow: hidden;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* UI */
         .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
-        .top-bar { 
-            position: absolute; top: 18px; left: 0; right: 0; 
-            display: flex; justify-content: space-between; padding: 0 15px; 
-        }
         
-        .stat-card { 
-            background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); 
-            padding: 6px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-            min-width: 65px; text-align: center; color: #fff;
+        /* Top Bar */
+        .top-bar {
+            position: absolute; top: 20px; left: 0; right: 0;
+            display: flex; justify-content: space-between; padding: 0 15px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+            padding: 8px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
+            min-width: 70px; text-align: center; color: white;
         }
         .stat-label { font-size: 8px; opacity: 0.6; font-weight: 900; margin-bottom: 2px; }
-        .stat-value { font-size: 14px; font-weight: 800; }
+        .stat-value { font-size: 14px; font-weight: 800; color: #fff; }
 
-        .bag-system { 
-            position: absolute; top: 18px; left: 50%; transform: translateX(-50%); 
-            width: 90px; text-align: center; 
+        /* Controls */
+        .controls {
+            position: absolute; bottom: 25px; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 12px; pointer-events: auto;
         }
-        .bag-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 4px; overflow: hidden; }
-        #bag-fill-w { width: 0%; height: 100%; background: var(--accent); transition: width 0.2s; }
-
-        .combo-info { position: absolute; top: 80px; left: 15px; }
-        #combo-txt { font-size: 32px; font-weight: 900; color: var(--accent); text-shadow: 0 0 10px rgba(34,211,238,0.5); display: none; }
-        .best-score { font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold; }
-
-        .controls { 
-            position: absolute; bottom: 20px; left: 0; right: 0; 
-            display: flex; justify-content: center; gap: 10px; pointer-events: auto; 
-        }
-        
         .btn {
-            width: 58px; height: 58px; border-radius: 50%; border: none;
-            background: rgba(255,255,255,0.12); backdrop-filter: blur(10px);
+            width: 70px; height: 70px; border-radius: 20px; border: none;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
         }
-        .btn:active { transform: scale(0.9); }
-        .btn-price { font-size: 9px; font-weight: 800; color: var(--gold); }
-        .btn-name { font-size: 7px; opacity: 0.8; font-weight: bold; }
+        .btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+        .btn-label { font-size: 7px; font-weight: 900; opacity: 0.8; margin-top: 4px; text-align: center; }
+        .btn-price { font-size: 10px; font-weight: 800; color: var(--gold); }
+        
+        .can-afford { border-color: var(--gold); box-shadow: 0 0 15px rgba(250, 204, 21, 0.2); }
+        .prestige-btn { background: linear-gradient(135deg, #a855f7, #6366f1); border: none; }
 
-        .can-afford { animation: pulse-gold 1.5s infinite; border-color: var(--gold) !important; }
-        @keyframes pulse-gold { 
-            0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.3); }
-            50% { box-shadow: 0 0 10px 2px rgba(250, 204, 21, 0.2); }
-        }
-
-        #notif { 
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); 
-            color: white; font-weight: 900; font-size: 30px; text-align: center;
-            pointer-events: none; z-index: 100; display: none;
+        #notif {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-weight: 900; font-size: 32px; pointer-events: none; z-index: 100; display: none;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .animate-notif { display: block; animation: notifAnim 1.5s forwards; }
-        @keyframes notifAnim { 0% { opacity: 0; scale: 0.5; } 20% { opacity: 1; scale: 1.1; } 100% { opacity: 0; transform: translate(-50%, -100%) scale(1.2); } }
+        @keyframes notifAnim { 0% { opacity:0; scale:0.5; } 20% { opacity:1; scale:1.1; } 100% { opacity:0; transform: translate(-50%, -80%) scale(1.2); } }
     </style>
 </head>
 <body>
@@ -109,21 +90,19 @@
         <canvas id="gameCanvas"></canvas>
         <div id="ui" class="ui-layer">
             <div class="top-bar">
-                <div class="stat-card"><div class="stat-label">RANK</div><div class="stat-value" id="lvl">1</div></div>
-                <div class="bag-system">
-                    <div class="stat-label" style="color:white">BAG <span id="bag-txt">0</span>%</div>
-                    <div class="bag-bar-bg"><div id="bag-fill-w"></div></div>
-                </div>
-                <div class="stat-card"><div class="stat-label">COINS</div><div class="stat-value" id="coins" style="color:var(--gold)">0</div></div>
-            </div>
-            <div class="combo-info">
-                <div id="combo-txt">x0</div>
-                <div class="best-score">BEST: x<span id="best-combo">0</span></div>
+                <div class="stat-card"><div class="stat-label">RANK</div><div class="stat-value" id="rank-val">1</div></div>
+                <div class="stat-card"><div class="stat-label">COINS</div><div class="stat-value" id="coins-val" style="color:var(--gold)">0</div></div>
             </div>
             <div class="controls">
-                <button class="btn" onclick="upgrade('power')" id="btn-power"><span>💪</span><div class="btn-name">POWER</div><div class="btn-price" id="p-price">50</div></button>
-                <button class="btn btn-turbo" onclick="activateTurbo()" id="btn-turbo"><span>⚡</span><div class="btn-name">TURBO</div><div class="btn-price" id="t-price">100</div></button>
-                <button class="btn" onclick="upgrade('radius')" id="btn-radius"><span>🔍</span><div class="btn-name">RADIUS</div><div class="btn-price" id="r-price">75</div></button>
+                <button class="btn" onclick="upgrade('power')" id="btn-power">
+                    <span id="p-icon">💪</span><div class="btn-label" id="p-label">СИЛА</div><div class="btn-price" id="p-price">50</div>
+                </button>
+                <button class="btn" onclick="activateTurbo()" id="btn-turbo">
+                    <span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">100</div>
+                </button>
+                <button class="btn" onclick="upgrade('radius')" id="btn-radius">
+                    <span id="r-icon">🔍</span><div class="btn-label" id="r-label">РАДИУС</div><div class="btn-price" id="r-price">75</div>
+                </button>
             </div>
         </div>
         <div id="notif"></div>
@@ -133,42 +112,41 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        
-        // 1. Блокировка свайпа (жесткая)
         if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 1) e.preventDefault(); // Запрет мультитача (зума)
-            e.preventDefault(); // Запрет свайпа страницы
-        }, { passive: false });
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa'];
 
-        // 2. Настройка темы
-        function syncTheme() {
-            const isDark = tg.colorScheme === 'dark';
-            const bgColor = tg.themeParams.bg_color || (isDark ? '#000000' : '#ffffff');
-            document.documentElement.style.setProperty('--tg-bg', bgColor);
-            tg.setBackgroundColor(bgColor);
-            tg.setHeaderColor(bgColor);
-        }
-
-        let state = JSON.parse(localStorage.getItem('pixel_vac_v3')) || {
-            level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 100, bestCombo: 0, totalCleared: 0
+        // --- Game State ---
+        let state = JSON.parse(localStorage.getItem('pixel_vac_prestige_v1')) || {
+            rank: 1, coins: 0, pLvl: 0, rLvl: 0, magnetLvl: 0, tPrice: 100
         };
 
-        const MAX_POWER = 50, MAX_RAD = 20;
-        let pixels = [], powerups = [], mouse = { x: -100, y: -100, down: false };
-        let combo = 0, comboTimer = 0, bagFill = 0, isOverheating = false;
-        let lastTime = performance.now(), spawnAcc = 0, isTurbo = false, activeMagnet = 0;
+        const OFFSET_Y = 75; // Визуальный офсет выше пальца
+        const RADIUS_CAP_RATIO = 0.35; // 35% экрана
+        const MAX_POWER_VAL = 10.0;
+        
+        let pixels = [], clumps = [], mouse = { x: -100, y: -100, down: false };
+        let lastTime = performance.now(), spawnAcc = 0, isTurbo = false;
+
+        function syncTheme() {
+            const bg = tg.themeParams.bg_color || (tg.colorScheme === 'dark' ? '#000000' : '#ffffff');
+            document.documentElement.style.setProperty('--tg-bg', bg);
+            tg.setBackgroundColor(bg);
+            tg.setHeaderColor(bg);
+        }
 
         function init() {
             syncTheme();
             tg.onEvent('themeChanged', syncTheme);
             window.addEventListener('resize', resize);
             resize();
-            for(let i=0; i<80; i++) spawnPixel();
+            
+            // Предотвращение скролла
+            document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+            
+            for(let i=0; i<60; i++) spawnPixel();
             requestAnimationFrame(loop);
         }
 
@@ -177,108 +155,161 @@
             canvas.width = rect.width; canvas.height = rect.height;
         }
 
+        // --- Mechanics ---
         function spawnPixel() {
-            const m = 30;
-            const isH = Math.random() < 0.1;
-            const isG = Math.random() < 0.03;
             pixels.push({
-                x: m + Math.random()*(canvas.width-m*2), y: m + Math.random()*(canvas.height-m*2),
-                gold: isG, mass: isH ? 2.8 : 1,
-                color: isH ? '#4b5563' : (isG ? '#facc15' : COLORS[Math.floor(Math.random()*COLORS.length)])
+                x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+                color: COLORS[Math.floor(Math.random()*COLORS.length)],
+                gold: Math.random() < 0.02
             });
         }
 
-        function upgrade(type) {
-            if (type === 'power' && state.pLvl >= MAX_POWER) return;
-            if (type === 'radius' && state.rLvl >= MAX_RAD) return;
-            let cost = type === 'power' ? Math.floor(50*Math.pow(1.8, state.pLvl)) : Math.floor(75*Math.pow(2.3, state.rLvl));
-            if(state.coins >= cost) {
-                state.coins -= cost;
-                if(type === 'power') state.pLvl++; else state.rLvl++;
-                if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                save();
+        function spawnClump() {
+            const cx = Math.random()*canvas.width, cy = Math.random()*canvas.height;
+            const size = 5 + Math.floor(Math.random()*5);
+            const clump = { x: cx, y: cy, resistance: 2.0, parts: [] };
+            for(let i=0; i<size; i++) {
+                clump.parts.push({ dx: (Math.random()-0.5)*12, dy: (Math.random()-0.5)*12 });
             }
+            clumps.push(clump);
+        }
+
+        function getPower() {
+            let base = 1.0 + Math.log10(state.pLvl + 1) * 2;
+            return Math.min(base, MAX_POWER_VAL);
+        }
+
+        function getRadius() {
+            let base = 50 + state.rLvl * 10;
+            return Math.min(base, canvas.width * RADIUS_CAP_RATIO);
+        }
+
+        function upgrade(type) {
+            if(type === 'power') {
+                const currentP = getPower();
+                if(currentP >= MAX_POWER_VAL) {
+                    // ПРЕСТИЖ
+                    state.rank++;
+                    state.pLvl = 0;
+                    state.coins = 0; // Сброс при престиже
+                    addMessage(`РАНГ ${state.rank}! 🎖️`);
+                    if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    let cost = Math.floor(50 * Math.pow(1.6, state.pLvl));
+                    if(state.coins >= cost) {
+                        state.coins -= cost; state.pLvl++;
+                    }
+                }
+            } else {
+                const rad = getRadius();
+                if(rad >= canvas.width * RADIUS_CAP_RATIO) {
+                    // МАГНЕТИЗМ
+                    let cost = Math.floor(500 * Math.pow(2, state.magnetLvl));
+                    if(state.coins >= cost) {
+                        state.coins -= cost; state.magnetLvl++;
+                    }
+                } else {
+                    let cost = Math.floor(75 * Math.pow(1.8, state.rLvl));
+                    if(state.coins >= cost) {
+                        state.coins -= cost; state.rLvl++;
+                    }
+                }
+            }
+            save();
         }
 
         function activateTurbo() {
-            if(state.coins >= state.tPrice && !isTurbo && !isOverheating) {
+            if(state.coins >= state.tPrice && !isTurbo) {
                 state.coins -= state.tPrice;
-                state.tPrice = Math.floor(state.tPrice * 1.6);
+                state.tPrice = Math.floor(state.tPrice * 1.5);
                 isTurbo = true;
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                setTimeout(() => isTurbo = false, 6000);
+                if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                addMessage("УЛЬТРА! 🔥");
+                setTimeout(() => isTurbo = false, 5000);
             }
         }
 
         function loop(t) {
             const dt = Math.min((t - lastTime)/1000, 0.1);
             lastTime = t;
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if(bagFill >= 100 && !isOverheating) {
-                isOverheating = true; combo = 0;
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            }
-            if(isOverheating) {
-                bagFill -= dt * 25;
-                if(bagFill <= 0) { bagFill = 0; isOverheating = false; }
-            } else {
-                bagFill = Math.max(0, bagFill - dt * 3);
-            }
-
-            if(comboTimer > 0) { comboTimer -= dt; if(comboTimer <= 0) combo = 0; }
-            if(activeMagnet > 0) activeMagnet -= dt;
+            // Виртуальная точка всасывания
+            const targetX = mouse.x;
+            const targetY = mouse.y - OFFSET_Y;
 
             spawnAcc += dt;
-            if(spawnAcc > 0.3) {
+            if(spawnAcc > 0.4) {
                 if(pixels.length < 150) spawnPixel();
-                if(Math.random() < 0.01) powerups.push({ x: 50+Math.random()*(canvas.width-100), y: 50+Math.random()*(canvas.height-100), type: Math.random()>0.5?'🧲':'❄️', life: 6 });
+                if(Math.random() < 0.05 && clumps.length < 3) spawnClump();
                 spawnAcc = 0;
             }
 
-            const pwr = (1.0 + Math.log10(state.pLvl+1)*1.5) * (isOverheating ? 0.3 : (isTurbo ? 3.0 : 1.0));
-            let rad = 55 + state.rLvl * 12;
-            if(activeMagnet > 0) rad *= 1.5;
-            const r2 = rad * rad;
+            const power = getPower() * (isTurbo ? 3.5 : 1.0) * (1 + state.magnetLvl * 0.5);
+            const radius = getRadius();
+            const radSq = radius * radius;
+            const maxVelocity = 12; // Лимит скорости для плавности
 
-            if(mouse.down && !isOverheating) {
-                ctx.beginPath();
-                let g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, rad);
-                g.addColorStop(0, isTurbo ? 'rgba(239,68,68,0.15)' : 'rgba(34,211,238,0.1)');
-                g.addColorStop(1, 'transparent');
-                ctx.fillStyle = g; ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
+            // Draw Radius Visual
+            if(mouse.down) {
+                const grad = ctx.createRadialGradient(targetX, targetY, 0, targetX, targetY, radius);
+                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 211, 238, 0.15)');
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(targetX, targetY, radius, 0, Math.PI*2); ctx.fill();
             }
 
+            // Pixels Logic
             for(let i=pixels.length-1; i>=0; i--) {
                 let p = pixels[i];
-                let dx = mouse.x - p.x, dy = mouse.y - p.y;
+                let dx = targetX - p.x, dy = targetY - p.y;
                 let d2 = dx*dx + dy*dy;
-                if(mouse.down && !isOverheating && d2 < r2) {
+
+                if(mouse.down && d2 < radSq) {
                     let d = Math.sqrt(d2) || 1;
-                    let f = (pwr/p.mass) * 220 * dt;
-                    p.x += (dx/d)*f; p.y += (dy/d)*f;
-                    if(d < 12) {
-                        pixels.splice(i,1); combo++; comboTimer = 2.0; state.totalCleared++;
-                        bagFill += 0.8; if(isTurbo) bagFill += 0.4;
-                        state.coins += (p.gold ? 10 : 1) * (1 + Math.floor(combo/10)*0.2);
-                        if(combo > state.bestCombo) state.bestCombo = combo;
-                        if(state.totalCleared % 150 === 0) state.level++;
-                        continue;
+                    let force = (power * 200 * dt);
+                    let vx = (dx/d) * force;
+                    let vy = (dy/d) * force;
+
+                    // Ограничение скорости (Потоковость)
+                    p.x += Math.max(Math.min(vx, maxVelocity), -maxVelocity);
+                    p.y += Math.max(Math.min(vy, maxVelocity), -maxVelocity);
+
+                    if(d < 10) {
+                        state.coins += (p.gold ? 15 : 1) * state.rank;
+                        pixels.splice(i, 1); continue;
                     }
                 }
-                ctx.fillStyle = p.color; ctx.fillRect(p.x-2, p.y-2, 4, 4);
+                ctx.fillStyle = p.gold ? '#facc15' : p.color;
+                ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
 
-            for(let i=powerups.length-1; i>=0; i--) {
-                let pw = powerups[i]; pw.life -= dt;
-                let dx = mouse.x - pw.x, dy = mouse.y - pw.y;
-                if(mouse.down && (dx*dx+dy*dy) < 1000) {
-                    if(pw.type === '🧲') activeMagnet = 8; else bagFill = Math.max(0, bagFill - 50);
-                    powerups.splice(i, 1); continue;
+            // Clumps Logic
+            for(let i=clumps.length-1; i>=0; i--) {
+                let c = clumps[i];
+                let dx = targetX - c.x, dy = targetY - c.y;
+                let d2 = dx*dx + dy*dy;
+
+                if(mouse.down && d2 < radSq) {
+                    c.resistance -= dt * (power/2);
+                    // Сопротивление: комок дрожит
+                    c.x += (Math.random()-0.5)*4;
+                    c.y += (Math.random()-0.5)*4;
+                    
+                    if(c.resistance <= 0) {
+                        state.coins += 25 * state.rank;
+                        if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                        clumps.splice(i, 1); continue;
+                    }
+                    // Плавное притяжение комка
+                    let d = Math.sqrt(d2) || 1;
+                    c.x += (dx/d) * 2; c.y += (dy/d) * 2;
                 }
-                if(pw.life <= 0) { powerups.splice(i, 1); continue; }
-                ctx.font = "24px Arial"; ctx.textAlign = "center"; ctx.fillText(pw.type, pw.x, pw.y);
+                
+                ctx.fillStyle = '#6b7280';
+                c.parts.forEach(pt => {
+                    ctx.fillRect(c.x + pt.dx - 2, c.y + pt.dy - 2, 5, 5);
+                });
             }
 
             updateUI();
@@ -286,51 +317,64 @@
         }
 
         function updateUI() {
-            document.getElementById('lvl').innerText = state.level;
-            document.getElementById('coins').innerText = Math.floor(state.coins);
-            document.getElementById('best-combo').innerText = state.bestCombo;
-            
-            const btnP = document.getElementById('btn-power'), btnR = document.getElementById('btn-radius');
-            if(state.pLvl >= MAX_POWER) btnP.style.display = 'none';
-            else { 
-                let c = Math.floor(50*Math.pow(1.8, state.pLvl)); 
-                document.getElementById('p-price').innerText = c;
-                btnP.classList.toggle('can-afford', state.coins >= c);
-            }
-            if(state.rLvl >= MAX_RAD) btnR.style.display = 'none';
-            else { 
-                let c = Math.floor(75*Math.pow(2.3, state.rLvl)); 
-                document.getElementById('r-price').innerText = c;
-                btnR.classList.toggle('can-afford', state.coins >= c);
+            document.getElementById('rank-val').innerText = state.rank;
+            document.getElementById('coins-val').innerText = Math.floor(state.coins);
+
+            // Power Button Evolution
+            const pBtn = document.getElementById('btn-power');
+            const currentP = getPower();
+            if(currentP >= MAX_POWER_VAL) {
+                pBtn.classList.add('prestige-btn');
+                document.getElementById('p-label').innerText = "ПРЕСТИЖ";
+                document.getElementById('p-price').innerText = "СБРОС";
+                pBtn.classList.add('can-afford');
+            } else {
+                pBtn.classList.remove('prestige-btn');
+                document.getElementById('p-label').innerText = "СИЛА";
+                let cost = Math.floor(50 * Math.pow(1.6, state.pLvl));
+                document.getElementById('p-price').innerText = cost;
+                pBtn.classList.toggle('can-afford', state.coins >= cost);
             }
 
-            const btnT = document.getElementById('btn-turbo');
+            // Radius Button Evolution
+            const rBtn = document.getElementById('btn-radius');
+            if(getRadius() >= canvas.width * RADIUS_CAP_RATIO) {
+                document.getElementById('r-label').innerText = "МАГНЕТИЗМ";
+                let cost = Math.floor(500 * Math.pow(2, state.magnetLvl));
+                document.getElementById('r-price').innerText = cost;
+                rBtn.classList.toggle('can-afford', state.coins >= cost);
+            } else {
+                document.getElementById('r-label').innerText = "РАДИУС";
+                let cost = Math.floor(75 * Math.pow(1.8, state.rLvl));
+                document.getElementById('r-price').innerText = cost;
+                rBtn.classList.toggle('can-afford', state.coins >= cost);
+            }
+
+            const tBtn = document.getElementById('btn-turbo');
             document.getElementById('t-price').innerText = state.tPrice;
-            btnT.classList.toggle('can-afford', state.coins >= state.tPrice && !isTurbo);
-            btnT.classList.toggle('active', isTurbo);
-
-            document.getElementById('bag-txt').innerText = Math.floor(bagFill);
-            const bFill = document.getElementById('bag-fill-w');
-            bFill.style.width = bagFill + '%';
-            bFill.style.background = isOverheating ? 'var(--danger)' : (bagFill > 80 ? 'var(--gold)' : 'var(--accent)');
-
-            const cUI = document.getElementById('combo-txt');
-            if(combo > 1) { cUI.innerText = 'x' + combo; cUI.style.display = 'block'; }
-            else cUI.style.display = 'none';
+            tBtn.classList.toggle('can-afford', state.coins >= state.tPrice);
         }
 
-        function save() { localStorage.setItem('pixel_vac_v3', JSON.stringify(state)); }
+        function addMessage(txt) {
+            const el = document.getElementById('notif');
+            el.innerText = txt; el.classList.remove('animate-notif');
+            void el.offsetWidth; el.classList.add('animate-notif');
+        }
+
+        function save() { localStorage.setItem('pixel_vac_prestige_v1', JSON.stringify(state)); }
+
         function handlePointer(e) {
             const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            mouse.x = x; mouse.y = y;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            mouse.x = clientX - rect.left;
+            mouse.y = clientY - rect.top;
         }
 
-        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); });
-        window.addEventListener('pointermove', handlePointer);
+        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); e.preventDefault(); });
+        window.addEventListener('pointermove', e => { handlePointer(e); e.preventDefault(); });
         window.addEventListener('pointerup', () => { mouse.down = false; save(); });
-        
+
         init();
     </script>
 </body>

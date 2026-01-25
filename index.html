@@ -3,86 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Vacuum Pro: Prestige</title>
+    <title>Pixel Vacuum: Pro Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --game-bg: #050505;
+            /* Интеграция с темой Telegram */
+            --bg-color: var(--tg-theme-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #000000);
+            --hint-color: var(--tg-theme-hint-color, #999999);
+            --button-color: var(--tg-theme-button-color, #2481cc);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
             --accent: #22d3ee;
             --gold: #facc15;
             --danger: #ef4444;
-            --tg-bg: #000;
         }
 
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
-            touch-action: none;
-            overscroll-behavior: none;
+            touch-action: none; /* Блокировка системных жестов */
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; position: fixed;
-            background-color: var(--tg-bg);
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overscroll-behavior: none; /* Запрет bounce-эффекта */
         }
 
         #game-wrapper {
             position: relative;
             width: calc(100% - 20px);
-            height: calc(100% - 100px);
-            background: var(--game-bg);
-            border-radius: 32px;
+            height: calc(100% - 140px);
+            background: #050505; /* Внутреннее поле всегда темное для контраста пикселей */
+            border-radius: 24px;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 2px solid var(--button-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
         .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
         
-        /* Top Bar */
+        /* Верхняя панель */
         .top-bar {
-            position: absolute; top: 20px; left: 0; right: 0;
+            position: absolute; top: 15px; left: 0; right: 0;
             display: flex; justify-content: space-between; padding: 0 15px;
         }
         .stat-card {
-            background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
-            padding: 8px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
-            min-width: 70px; text-align: center; color: white;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            padding: 8px; border-radius: 12px; min-width: 80px; text-align: center;
         }
-        .stat-label { font-size: 8px; opacity: 0.6; font-weight: 900; margin-bottom: 2px; }
-        .stat-value { font-size: 14px; font-weight: 800; color: #fff; }
+        .stat-label { font-size: 9px; text-transform: uppercase; opacity: 0.8; color: #eee; }
+        .stat-value { font-size: 16px; font-weight: 800; color: #fff; }
 
-        /* Controls */
+        /* Контроллеры */
         .controls {
-            position: absolute; bottom: 25px; left: 0; right: 0;
-            display: flex; justify-content: center; gap: 12px; pointer-events: auto;
+            display: flex; justify-content: center; gap: 10px; padding: 10px; width: 100%;
+            pointer-events: auto;
         }
         .btn {
-            width: 70px; height: 70px; border-radius: 20px; border: none;
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
+            flex: 1; max-width: 110px; height: 75px; border-radius: 16px; border: none;
+            background: var(--button-color); color: var(--button-text);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 0.1s, opacity 0.2s; position: relative;
         }
-        .btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
-        .btn-label { font-size: 7px; font-weight: 900; opacity: 0.8; margin-top: 4px; text-align: center; }
-        .btn-price { font-size: 10px; font-weight: 800; color: var(--gold); }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; filter: grayscale(1); }
         
-        .can-afford { border-color: var(--gold); box-shadow: 0 0 15px rgba(250, 204, 21, 0.2); }
-        .prestige-btn { background: linear-gradient(135deg, #a855f7, #6366f1); border: none; }
+        .btn-lvl { font-size: 9px; font-weight: bold; position: absolute; top: 5px; opacity: 0.9; }
+        .btn-label { font-size: 10px; font-weight: 900; margin-top: 15px; }
+        .btn-price { font-size: 11px; font-weight: bold; color: var(--gold); }
+        
+        .locked { background: #444 !important; }
 
         #notif {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            color: white; font-weight: 900; font-size: 32px; pointer-events: none; z-index: 100; display: none;
-            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            color: white; font-weight: 900; font-size: 28px; pointer-events: none; z-index: 100; display: none;
+            text-shadow: 0 0 15px rgba(0,0,0,0.8);
         }
         .animate-notif { display: block; animation: notifAnim 1.5s forwards; }
-        @keyframes notifAnim { 0% { opacity:0; scale:0.5; } 20% { opacity:1; scale:1.1; } 100% { opacity:0; transform: translate(-50%, -80%) scale(1.2); } }
+        @keyframes notifAnim { 0% { opacity:0; scale:0.5; } 20% { opacity:1; scale:1.1; } 100% { opacity:0; transform: translate(-50%, -100%); } }
     </style>
 </head>
 <body>
@@ -90,25 +97,33 @@
         <canvas id="gameCanvas"></canvas>
         <div id="ui" class="ui-layer">
             <div class="top-bar">
-                <div class="stat-card"><div class="stat-label">RANK</div><div class="stat-value" id="rank-val">1</div></div>
-                <div class="stat-card"><div class="stat-label">COINS</div><div class="stat-value" id="coins-val" style="color:var(--gold)">0</div></div>
-            </div>
-            <div class="controls">
-                <button class="btn" onclick="upgrade('power')" id="btn-power">
-                    <span id="p-icon">💪</span><div class="btn-label" id="p-label">СИЛА</div><div class="btn-price" id="p-price">50</div>
-                </button>
-                <button class="btn" onclick="activateTurbo()" id="btn-turbo">
-                    <span>⚡</span><div class="btn-label">ТУРБО</div><div class="btn-price" id="t-price">100</div>
-                </button>
-                <button class="btn" onclick="upgrade('radius')" id="btn-radius">
-                    <span id="r-icon">🔍</span><div class="btn-label" id="r-label">РАДИУС</div><div class="btn-price" id="r-price">75</div>
-                </button>
+                <div class="stat-card"><div class="stat-label">COINS</div><div class="stat-value" id="coins-val">0</div></div>
+                <div class="stat-card"><div class="stat-label">BAG</div><div class="stat-value" id="bag-val">0%</div></div>
             </div>
         </div>
         <div id="notif"></div>
     </div>
 
+    <div class="controls">
+        <button class="btn" onclick="upgrade('power')" id="btn-power">
+            <div class="btn-lvl" id="p-lvl">Lvl 0/20</div>
+            <div class="btn-label" id="p-label">POWER</div>
+            <div class="btn-price" id="p-price">50</div>
+        </button>
+        <button class="btn locked" onclick="activateTurbo()" id="btn-turbo">
+            <div class="btn-lvl" id="t-lvl">Lvl 0/10</div>
+            <div class="btn-label">TURBO</div>
+            <div class="btn-price" id="t-price">LOCKED</div>
+        </button>
+        <button class="btn" onclick="upgrade('radius')" id="btn-radius">
+            <div class="btn-lvl" id="r-lvl">Lvl 0/15</div>
+            <div class="btn-label" id="r-label">RADIUS</div>
+            <div class="btn-price" id="r-price">75</div>
+        </button>
+    </div>
+
     <script>
+        // --- Telegram Integration ---
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -116,36 +131,33 @@
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa'];
 
-        // --- Game State ---
-        let state = JSON.parse(localStorage.getItem('pixel_vac_prestige_v1')) || {
-            rank: 1, coins: 0, pLvl: 0, rLvl: 0, magnetLvl: 0, tPrice: 100
+        // --- Hard Caps ---
+        const MAX_PWR = 20;
+        const MAX_RAD = 15;
+        const MAX_TRB = 10;
+        const OFFSET_Y = 70;
+
+        let state = JSON.parse(localStorage.getItem('pixel_vac_v4')) || {
+            coins: 0, pLvl: 0, rLvl: 0, tLvl: 0, tPrice: 200, magnetPwr: 1
         };
 
-        const OFFSET_Y = 75; // Визуальный офсет выше пальца
-        const RADIUS_CAP_RATIO = 0.35; // 35% экрана
-        const MAX_POWER_VAL = 10.0;
-        
         let pixels = [], clumps = [], mouse = { x: -100, y: -100, down: false };
-        let lastTime = performance.now(), spawnAcc = 0, isTurbo = false;
+        let lastTime = performance.now(), spawnAcc = 0, isTurbo = false, bagFill = 0;
 
-        function syncTheme() {
-            const bg = tg.themeParams.bg_color || (tg.colorScheme === 'dark' ? '#000000' : '#ffffff');
-            document.documentElement.style.setProperty('--tg-bg', bg);
-            tg.setBackgroundColor(bg);
-            tg.setHeaderColor(bg);
+        function haptic(style = 'medium') {
+            try {
+                tg.HapticFeedback.impactOccurred(style);
+            } catch(e) {
+                if(navigator.vibrate) navigator.vibrate(50);
+            }
         }
 
         function init() {
-            syncTheme();
-            tg.onEvent('themeChanged', syncTheme);
             window.addEventListener('resize', resize);
             resize();
-            
-            // Предотвращение скролла
+            // Блокировка свайпа через JS
             document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-            
             for(let i=0; i<60; i++) spawnPixel();
             requestAnimationFrame(loop);
         }
@@ -155,63 +167,44 @@
             canvas.width = rect.width; canvas.height = rect.height;
         }
 
-        // --- Mechanics ---
         function spawnPixel() {
             pixels.push({
                 x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-                color: COLORS[Math.floor(Math.random()*COLORS.length)],
-                gold: Math.random() < 0.02
+                c: ['#22d3ee', '#4ade80', '#fb7185', '#facc15'][Math.floor(Math.random()*4)]
             });
         }
 
         function spawnClump() {
-            const cx = Math.random()*canvas.width, cy = Math.random()*canvas.height;
-            const size = 5 + Math.floor(Math.random()*5);
-            const clump = { x: cx, y: cy, resistance: 2.0, parts: [] };
-            for(let i=0; i<size; i++) {
-                clump.parts.push({ dx: (Math.random()-0.5)*12, dy: (Math.random()-0.5)*12 });
-            }
+            const size = 6;
+            const clump = {
+                x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+                life: 1.8, active: false, 
+                parts: Array.from({length: size}, () => ({dx: Math.random()*12-6, dy: Math.random()*12-6}))
+            };
             clumps.push(clump);
-        }
-
-        function getPower() {
-            let base = 1.0 + Math.log10(state.pLvl + 1) * 2;
-            return Math.min(base, MAX_POWER_VAL);
-        }
-
-        function getRadius() {
-            let base = 50 + state.rLvl * 10;
-            return Math.min(base, canvas.width * RADIUS_CAP_RATIO);
         }
 
         function upgrade(type) {
             if(type === 'power') {
-                const currentP = getPower();
-                if(currentP >= MAX_POWER_VAL) {
-                    // ПРЕСТИЖ
-                    state.rank++;
-                    state.pLvl = 0;
-                    state.coins = 0; // Сброс при престиже
-                    addMessage(`РАНГ ${state.rank}! 🎖️`);
-                    if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    let cost = Math.floor(50 * Math.pow(1.6, state.pLvl));
-                    if(state.coins >= cost) {
-                        state.coins -= cost; state.pLvl++;
-                    }
+                if(state.pLvl >= MAX_PWR) return;
+                let cost = Math.floor(50 * Math.pow(1.5, state.pLvl));
+                if(state.coins >= cost) {
+                    state.coins -= cost; state.pLvl++;
+                    haptic('light');
                 }
-            } else {
-                const rad = getRadius();
-                if(rad >= canvas.width * RADIUS_CAP_RATIO) {
-                    // МАГНЕТИЗМ
-                    let cost = Math.floor(500 * Math.pow(2, state.magnetLvl));
+            } else if(type === 'radius') {
+                if(state.rLvl >= MAX_RAD) {
+                    // Магнетизм
+                    let cost = 500 * state.magnetPwr;
                     if(state.coins >= cost) {
-                        state.coins -= cost; state.magnetLvl++;
+                        state.coins -= cost; state.magnetPwr++;
+                        haptic('light');
                     }
                 } else {
-                    let cost = Math.floor(75 * Math.pow(1.8, state.rLvl));
+                    let cost = Math.floor(75 * Math.pow(1.6, state.rLvl));
                     if(state.coins >= cost) {
                         state.coins -= cost; state.rLvl++;
+                        haptic('light');
                     }
                 }
             }
@@ -219,97 +212,74 @@
         }
 
         function activateTurbo() {
-            if(state.coins >= state.tPrice && !isTurbo) {
-                state.coins -= state.tPrice;
-                state.tPrice = Math.floor(state.tPrice * 1.5);
-                isTurbo = true;
-                if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-                addMessage("УЛЬТРА! 🔥");
-                setTimeout(() => isTurbo = false, 5000);
-            }
+            if(state.pLvl < MAX_PWR || isTurbo) return;
+            isTurbo = true;
+            haptic('medium');
+            addMessage("TURBO ACTIVATED!");
+            let duration = 3000 + (state.tLvl * 500);
+            setTimeout(() => isTurbo = false, duration);
         }
 
         function loop(t) {
-            const dt = Math.min((t - lastTime)/1000, 0.1);
+            const dt = (t - lastTime) / 1000;
             lastTime = t;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Виртуальная точка всасывания
-            const targetX = mouse.x;
-            const targetY = mouse.y - OFFSET_Y;
+            const tx = mouse.x, ty = mouse.y - OFFSET_Y;
+            const rad = 50 + (state.rLvl * 8);
+            const pwr = (1 + state.pLvl * 0.5) * (isTurbo ? 2 : 1) * state.magnetPwr;
 
             spawnAcc += dt;
-            if(spawnAcc > 0.4) {
-                if(pixels.length < 150) spawnPixel();
-                if(Math.random() < 0.05 && clumps.length < 3) spawnClump();
+            if(spawnAcc > 0.5) {
+                if(pixels.length < 120) spawnPixel();
+                if(Math.random() < 0.1 && clumps.length < 2) spawnClump();
                 spawnAcc = 0;
             }
 
-            const power = getPower() * (isTurbo ? 3.5 : 1.0) * (1 + state.magnetLvl * 0.5);
-            const radius = getRadius();
-            const radSq = radius * radius;
-            const maxVelocity = 12; // Лимит скорости для плавности
-
-            // Draw Radius Visual
+            // Визуал радиуса
             if(mouse.down) {
-                const grad = ctx.createRadialGradient(targetX, targetY, 0, targetX, targetY, radius);
-                grad.addColorStop(0, isTurbo ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 211, 238, 0.15)');
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.beginPath(); ctx.arc(targetX, targetY, radius, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath();
+                ctx.arc(tx, ty, rad, 0, Math.PI*2);
+                ctx.fillStyle = isTurbo ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 211, 238, 0.1)';
+                ctx.fill();
             }
 
-            // Pixels Logic
+            // Пиксели
             for(let i=pixels.length-1; i>=0; i--) {
                 let p = pixels[i];
-                let dx = targetX - p.x, dy = targetY - p.y;
-                let d2 = dx*dx + dy*dy;
-
-                if(mouse.down && d2 < radSq) {
-                    let d = Math.sqrt(d2) || 1;
-                    let force = (power * 200 * dt);
-                    let vx = (dx/d) * force;
-                    let vy = (dy/d) * force;
-
-                    // Ограничение скорости (Потоковость)
-                    p.x += Math.max(Math.min(vx, maxVelocity), -maxVelocity);
-                    p.y += Math.max(Math.min(vy, maxVelocity), -maxVelocity);
-
-                    if(d < 10) {
-                        state.coins += (p.gold ? 15 : 1) * state.rank;
-                        pixels.splice(i, 1); continue;
+                let dx = tx - p.x, dy = ty - p.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if(mouse.down && dist < rad) {
+                    let speed = Math.min(dist * 0.1 * pwr, 15);
+                    p.x += (dx/dist) * speed; p.y += (dy/dist) * speed;
+                    if(dist < 10) { 
+                        state.coins += 1; bagFill = Math.min(100, bagFill + 0.1);
+                        pixels.splice(i, 1); 
                     }
                 }
-                ctx.fillStyle = p.gold ? '#facc15' : p.color;
-                ctx.fillRect(p.x-2, p.y-2, 4, 4);
+                ctx.fillStyle = p.c; ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
 
-            // Clumps Logic
+            // Комки
             for(let i=clumps.length-1; i>=0; i--) {
                 let c = clumps[i];
-                let dx = targetX - c.x, dy = targetY - c.y;
-                let d2 = dx*dx + dy*dy;
-
-                if(mouse.down && d2 < radSq) {
-                    c.resistance -= dt * (power/2);
-                    // Сопротивление: комок дрожит
-                    c.x += (Math.random()-0.5)*4;
-                    c.y += (Math.random()-0.5)*4;
-                    
-                    if(c.resistance <= 0) {
-                        state.coins += 25 * state.rank;
-                        if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-                        clumps.splice(i, 1); continue;
+                let dx = tx - c.x, dy = ty - c.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if(mouse.down && dist < rad) {
+                    if(!c.active) { c.active = true; haptic('medium'); }
+                    c.life -= dt;
+                    // Тряска
+                    c.x += (Math.random()-0.5)*5; c.y += (Math.random()-0.5)*5;
+                    // Всасывание центра
+                    c.x += (dx/dist) * 2; c.y += (dy/dist) * 2;
+                    if(c.life <= 0) {
+                        state.coins += 20; bagFill = Math.min(100, bagFill + 2);
+                        haptic('medium'); clumps.splice(i, 1); continue;
                     }
-                    // Плавное притяжение комка
-                    let d = Math.sqrt(d2) || 1;
-                    c.x += (dx/d) * 2; c.y += (dy/d) * 2;
-                }
+                } else { c.active = false; }
                 
-                ctx.fillStyle = '#6b7280';
-                c.parts.forEach(pt => {
-                    ctx.fillRect(c.x + pt.dx - 2, c.y + pt.dy - 2, 5, 5);
-                });
+                ctx.fillStyle = '#777';
+                c.parts.forEach(p => ctx.fillRect(c.x+p.dx, c.y+p.dy, 5, 5));
             }
 
             updateUI();
@@ -317,42 +287,44 @@
         }
 
         function updateUI() {
-            document.getElementById('rank-val').innerText = state.rank;
             document.getElementById('coins-val').innerText = Math.floor(state.coins);
+            document.getElementById('bag-val').innerText = Math.floor(bagFill) + '%';
 
-            // Power Button Evolution
+            // Power
+            const pLvlTxt = document.getElementById('p-lvl');
             const pBtn = document.getElementById('btn-power');
-            const currentP = getPower();
-            if(currentP >= MAX_POWER_VAL) {
-                pBtn.classList.add('prestige-btn');
-                document.getElementById('p-label').innerText = "ПРЕСТИЖ";
-                document.getElementById('p-price').innerText = "СБРОС";
-                pBtn.classList.add('can-afford');
+            pLvlTxt.innerText = `Lvl ${state.pLvl}/${MAX_PWR}`;
+            if(state.pLvl >= MAX_PWR) {
+                document.getElementById('p-label').innerText = "MAX POWER";
+                document.getElementById('p-price').innerText = "READY";
             } else {
-                pBtn.classList.remove('prestige-btn');
-                document.getElementById('p-label').innerText = "СИЛА";
-                let cost = Math.floor(50 * Math.pow(1.6, state.pLvl));
+                let cost = Math.floor(50 * Math.pow(1.5, state.pLvl));
                 document.getElementById('p-price').innerText = cost;
-                pBtn.classList.toggle('can-afford', state.coins >= cost);
+                pBtn.disabled = state.coins < cost;
             }
 
-            // Radius Button Evolution
+            // Radius / Magnetism
+            const rLvlTxt = document.getElementById('r-lvl');
             const rBtn = document.getElementById('btn-radius');
-            if(getRadius() >= canvas.width * RADIUS_CAP_RATIO) {
-                document.getElementById('r-label').innerText = "МАГНЕТИЗМ";
-                let cost = Math.floor(500 * Math.pow(2, state.magnetLvl));
-                document.getElementById('r-price').innerText = cost;
-                rBtn.classList.toggle('can-afford', state.coins >= cost);
+            if(state.rLvl >= MAX_RAD) {
+                rLvlTxt.innerText = `Magnet: Lvl ${state.magnetPwr}`;
+                document.getElementById('r-label').innerText = "MAGNETISM";
+                let mCost = 500 * state.magnetPwr;
+                document.getElementById('r-price').innerText = mCost;
+                rBtn.disabled = state.coins < mCost;
             } else {
-                document.getElementById('r-label').innerText = "РАДИУС";
-                let cost = Math.floor(75 * Math.pow(1.8, state.rLvl));
+                rLvlTxt.innerText = `Lvl ${state.rLvl}/${MAX_RAD}`;
+                let cost = Math.floor(75 * Math.pow(1.6, state.rLvl));
                 document.getElementById('r-price').innerText = cost;
-                rBtn.classList.toggle('can-afford', state.coins >= cost);
+                rBtn.disabled = state.coins < cost;
             }
 
+            // Turbo
             const tBtn = document.getElementById('btn-turbo');
-            document.getElementById('t-price').innerText = state.tPrice;
-            tBtn.classList.toggle('can-afford', state.coins >= state.tPrice);
+            if(state.pLvl >= MAX_PWR) {
+                tBtn.classList.remove('locked');
+                document.getElementById('t-price').innerText = isTurbo ? "ACTIVE" : "USE";
+            }
         }
 
         function addMessage(txt) {
@@ -361,7 +333,7 @@
             void el.offsetWidth; el.classList.add('animate-notif');
         }
 
-        function save() { localStorage.setItem('pixel_vac_prestige_v1', JSON.stringify(state)); }
+        function save() { localStorage.setItem('pixel_vac_v4', JSON.stringify(state)); }
 
         function handlePointer(e) {
             const rect = canvas.getBoundingClientRect();
@@ -371,8 +343,8 @@
             mouse.y = clientY - rect.top;
         }
 
-        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); e.preventDefault(); });
-        window.addEventListener('pointermove', e => { handlePointer(e); e.preventDefault(); });
+        window.addEventListener('pointerdown', e => { mouse.down = true; handlePointer(e); });
+        window.addEventListener('pointermove', e => { handlePointer(e); });
         window.addEventListener('pointerup', () => { mouse.down = false; save(); });
 
         init();

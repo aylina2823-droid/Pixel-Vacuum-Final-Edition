@@ -11,34 +11,50 @@
             --accent: #22d3ee; 
             --gold: #facc15; 
             --danger: #ef4444; 
-            --cool: #3b82f6; 
+            --body-bg: #000;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+        }
+
+        /* Светлая тема */
+        body.light-theme {
+            --body-bg: #f0f0f0;
+            --card-bg: rgba(0, 0, 0, 0.05);
+            --text-main: #000000;
         }
         
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; outline: none; }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+            outline: none; 
+        }
 
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
-            background-color: #000; 
+            background-color: var(--body-bg); 
             display: flex; align-items: center; justify-content: center; 
             touch-action: none; overscroll-behavior: none;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: background-color 0.3s;
         }
 
         #game-wrapper {
             position: relative;
+            /* Больше отступ снизу (80px вместо 30) для защиты от жестов */
             width: calc(100% - 20px);
-            height: calc(100% - 30px);
+            height: calc(100% - 80px); 
+            margin-bottom: 40px; 
             background: var(--game-bg);
             border-radius: 32px;
             overflow: hidden;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* UI */
         .ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
         
         .top-bar { 
@@ -48,9 +64,9 @@
         }
         
         .stat-card { 
-            background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); 
+            background: var(--card-bg); backdrop-filter: blur(10px); 
             padding: 8px 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
-            min-width: 70px; text-align: center; color: white;
+            min-width: 70px; text-align: center; color: var(--text-main);
         }
         .stat-label { font-size: 9px; opacity: 0.6; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 2px; }
         .stat-value { font-size: 15px; font-weight: 800; }
@@ -62,7 +78,6 @@
         .bag-bar-bg { 
             width: 100%; height: 8px; background: rgba(255,255,255,0.1); 
             border-radius: 4px; margin-top: 5px; overflow: hidden; 
-            border: 1px solid rgba(255,255,255,0.05);
         }
         #bag-fill-w { width: 0%; height: 100%; background: var(--accent); transition: width 0.2s; }
 
@@ -72,9 +87,8 @@
             text-shadow: 0 0 15px rgba(34,211,238,0.5); display: none; 
             font-style: italic;
         }
-        .best-score { font-size: 10px; color: rgba(255,255,255,0.3); font-weight: bold; }
+        .best-score { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: bold; }
 
-        /* Controls */
         .controls { 
             position: absolute; bottom: 25px; left: 0; right: 0; 
             display: flex; justify-content: center; gap: 12px; pointer-events: auto; 
@@ -82,28 +96,26 @@
         
         .btn {
             width: 64px; height: 64px; border-radius: 50%; border: none;
-            background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.12); backdrop-filter: blur(10px);
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
         }
-        .btn:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
+        .btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
         .btn-price { font-size: 10px; font-weight: 800; color: var(--gold); }
-        .btn-name { font-size: 7px; opacity: 0.7; font-weight: bold; margin-bottom: 2px; }
+        .btn-name { font-size: 7px; opacity: 0.8; font-weight: bold; margin-bottom: 2px; }
 
-        /* Effects */
+        .can-afford { animation: pulse-gold 1.5s infinite; border-color: var(--gold) !important; }
         @keyframes pulse-gold { 
-            0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.4); border-color: rgba(250, 204, 21, 0.2); }
-            70% { box-shadow: 0 0 15px 5px rgba(250, 204, 21, 0); border-color: var(--gold); }
-            100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); border-color: rgba(250, 204, 21, 0.2); }
+            0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.4); }
+            70% { box-shadow: 0 0 15px 5px rgba(250, 204, 21, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
         }
-        .can-afford { animation: pulse-gold 1.5s infinite; }
         .btn-turbo.active { background: var(--danger); box-shadow: 0 0 25px var(--danger); border-color: white; }
         
         #notif { 
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); 
             color: white; font-weight: 900; font-size: 36px; text-align: center;
             pointer-events: none; z-index: 100; display: none;
-            text-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .animate-notif { display: block; animation: notifAnim 1.5s forwards; }
         @keyframes notifAnim { 
@@ -120,7 +132,7 @@
             <div class="top-bar">
                 <div class="stat-card"><div class="stat-label">RANK</div><div class="stat-value" id="lvl">1</div></div>
                 <div class="bag-system">
-                    <div class="stat-label" style="color:white">BAG <span id="bag-txt">0</span>%</div>
+                    <div class="stat-label" style="color:white; opacity: 1;">BAG <span id="bag-txt">0</span>%</div>
                     <div class="bag-bar-bg"><div id="bag-fill-w"></div></div>
                 </div>
                 <div class="stat-card"><div class="stat-label">COINS</div><div class="stat-value" id="coins" style="color:var(--gold)">0</div></div>
@@ -148,17 +160,20 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+        tg.ready();
+        tg.expand();
+        
+        // Ключевая настройка: отключаем свайпы для предотвращения сворачивания
+        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const COLORS = ['#22d3ee', '#4ade80', '#fb7185', '#fbbf24', '#a78bfa', '#f472b6'];
 
-        // Settings & Limits
         const MAX_POWER_LVL = 50;
         const MAX_RADIUS_LVL = 20;
 
-        let state = JSON.parse(localStorage.getItem('pixel_vaccum_inf_v1')) || {
+        let state = JSON.parse(localStorage.getItem('pixel_vaccum_inf_v2')) || {
             level: 1, coins: 0, pLvl: 0, rLvl: 0, tPrice: 100, bestCombo: 0, totalCleared: 0
         };
 
@@ -167,7 +182,18 @@
         let combo = 0, comboTimer = 0, bagFill = 0, isOverheating = false;
         let lastTime = performance.now(), spawnAcc = 0, isTurbo = false, activeMagnet = 0;
 
+        // Применение темы Telegram
+        function applyTheme() {
+            if (tg.colorScheme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+        }
+
         function init() {
+            applyTheme();
+            tg.onEvent('themeChanged', applyTheme);
             window.addEventListener('resize', resize);
             resize();
             for(let i=0; i<100; i++) spawnPixel(true);
@@ -179,7 +205,7 @@
             canvas.width = rect.width; canvas.height = rect.height;
         }
 
-        function spawnPixel(initial = false) {
+        function spawnPixel() {
             const margin = 30;
             const isHeavy = Math.random() < Math.min(0.05 + state.level * 0.01, 0.25);
             const isGold = Math.random() < 0.03;
@@ -200,11 +226,7 @@
         function upgrade(type) {
             if (type === 'power' && state.pLvl >= MAX_POWER_LVL) return;
             if (type === 'radius' && state.rLvl >= MAX_RADIUS_LVL) return;
-
-            let cost = (type === 'power') ? 
-                Math.floor(50 * Math.pow(1.8, state.pLvl)) : 
-                Math.floor(75 * Math.pow(2.3, state.rLvl));
-
+            let cost = (type === 'power') ? Math.floor(50 * Math.pow(1.8, state.pLvl)) : Math.floor(75 * Math.pow(2.3, state.rLvl));
             if(state.coins >= cost) {
                 state.coins -= cost;
                 if(type === 'power') state.pLvl++; else state.rLvl++;
@@ -231,7 +253,6 @@
             ctx.fillStyle = '#050505';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Overheat System
             if(bagFill >= 100 && !isOverheating) {
                 isOverheating = true; combo = 0;
                 addMessage("ПЕРЕГРЕВ! ⚠️");
@@ -250,7 +271,6 @@
             }
             if(activeMagnet > 0) activeMagnet -= dt;
 
-            // Endless Spawn
             spawnAcc += dt;
             if(spawnAcc > 0.25) {
                 if(pixels.length < 200) spawnPixel();
@@ -261,13 +281,11 @@
                 spawnAcc = 0;
             }
 
-            // Vacuum Power
             const suctionBase = (1.0 + Math.log10(state.pLvl + 1) * 1.6) * (isOverheating ? 0.3 : (isTurbo ? 3.0 : 1.0));
             let rad = (55 + state.rLvl * 12);
             if(activeMagnet > 0) rad *= 1.5;
             const rad2 = rad * rad;
 
-            // Visual Radius
             if(mouse.down && !isOverheating) {
                 ctx.beginPath();
                 let g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, rad);
@@ -277,7 +295,6 @@
                 ctx.arc(mouse.x, mouse.y, rad, 0, Math.PI*2); ctx.fill();
             }
 
-            // Update Pixels
             for(let i=pixels.length-1; i>=0; i--) {
                 let p = pixels[i];
                 let dx = mouse.x - p.x, dy = mouse.y - p.y;
@@ -287,17 +304,14 @@
                     let d = Math.sqrt(d2) || 1;
                     let f = (suctionBase / p.mass) * 220 * dt;
                     p.x += (dx/d)*f; p.y += (dy/d)*f;
-
                     if(d < 12) {
                         pixels.splice(i, 1);
                         combo++; comboTimer = 2.0;
                         state.totalCleared++;
                         bagFill += p.heavy ? 2.5 : 0.8;
-                        if(isTurbo) bagFill += 0.5; // Turbo heats up faster
-
+                        if(isTurbo) bagFill += 0.5;
                         let mult = 1 + Math.floor(combo/10)*0.2;
                         state.coins += (p.gold ? 10 : 1) * mult;
-                        
                         if(combo > state.bestCombo) state.bestCombo = combo;
                         if(state.totalCleared % 150 === 0) {
                             state.level++;
@@ -310,7 +324,6 @@
                 ctx.fillRect(p.x-2, p.y-2, 4, 4);
             }
 
-            // Powerups
             ctx.textAlign = "center";
             for(let i=powerups.length-1; i>=0; i--) {
                 let pw = powerups[i]; pw.life -= dt;
@@ -318,7 +331,7 @@
                 if(mouse.down && (dx*dx+dy*dy) < 1300) {
                     if(pw.type === '🧲') activeMagnet = 8;
                     else { bagFill = Math.max(0, bagFill - 50); comboTimer += 1.5; }
-                    addMessage(pw.type === '🧲' ? "МАГНИТ 🧲" : "ОХЛАЖДЕНИЕ ❄️");
+                    addMessage(pw.type === '🧲' ? "МАГНИТ 🧲" : "ХОЛОД ❄️");
                     powerups.splice(i, 1); continue;
                 }
                 if(pw.life <= 0) { powerups.splice(i, 1); continue; }
@@ -334,39 +347,32 @@
             document.getElementById('coins').innerText = Math.floor(state.coins);
             document.getElementById('best-combo').innerText = state.bestCombo;
             
-            // Power Button
             const btnP = document.getElementById('btn-power');
-            if(state.pLvl >= MAX_POWER_LVL) {
-                btnP.style.display = 'none';
-            } else {
+            if(state.pLvl >= MAX_POWER_LVL) btnP.style.display = 'none';
+            else {
                 const cost = Math.floor(50 * Math.pow(1.8, state.pLvl));
                 document.getElementById('p-price').innerText = cost;
                 btnP.classList.toggle('can-afford', state.coins >= cost);
             }
 
-            // Radius Button
             const btnR = document.getElementById('btn-radius');
-            if(state.rLvl >= MAX_RADIUS_LVL) {
-                btnR.style.display = 'none';
-            } else {
+            if(state.rLvl >= MAX_RADIUS_LVL) btnR.style.display = 'none';
+            else {
                 const cost = Math.floor(75 * Math.pow(2.3, state.rLvl));
                 document.getElementById('r-price').innerText = cost;
                 btnR.classList.toggle('can-afford', state.coins >= cost);
             }
 
-            // Turbo Button
             const btnT = document.getElementById('btn-turbo');
             document.getElementById('t-price').innerText = state.tPrice;
             btnT.classList.toggle('can-afford', state.coins >= state.tPrice && !isTurbo);
             btnT.classList.toggle('active', isTurbo);
 
-            // Bag UI
             document.getElementById('bag-txt').innerText = Math.floor(bagFill);
             const bFill = document.getElementById('bag-fill-w');
             bFill.style.width = bagFill + '%';
             bFill.style.background = isOverheating ? 'var(--danger)' : (bagFill > 80 ? 'var(--gold)' : 'var(--accent)');
 
-            // Combo UI
             const cUI = document.getElementById('combo-txt');
             if(combo > 1) {
                 cUI.innerText = 'x' + combo;
@@ -377,7 +383,7 @@
             }
         }
 
-        function save() { localStorage.setItem('pixel_vaccum_inf_v1', JSON.stringify(state)); }
+        function save() { localStorage.setItem('pixel_vaccum_inf_v2', JSON.stringify(state)); }
         
         function handlePointer(e) {
             const rect = canvas.getBoundingClientRect();

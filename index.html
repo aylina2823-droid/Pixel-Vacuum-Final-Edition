@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Динамические переменные, которые мы будем менять из JS */
             --tg-bg: #ffffff;
             --tg-text: #000000;
             --gold: #facc15;
@@ -15,7 +14,6 @@
             --ice: #3b82f6;
         }
 
-        /* Блокировка сворачивания и системных жестов */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -28,7 +26,6 @@
             width: 100%; height: 100%;
             overflow: hidden; 
             position: fixed; 
-            /* Привязываем фон к динамической переменной */
             background-color: var(--tg-bg) !important;
             color: var(--tg-text) !important;
             font-family: -apple-system, system-ui, sans-serif;
@@ -47,15 +44,14 @@
             position: relative;
             flex-grow: 1;
             margin: 10px;
-            background: #000; /* Внутри игры всегда черный для эффектов */
+            background: #000;
             border-radius: 24px;
-            border: 1px solid rgba(128, 128, 128, 0.3);
+            border: 1px solid rgba(128, 128, 128, 0.4);
             overflow: hidden;
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* UI элементы */
         .stats-top {
             position: absolute; top: 15px; left: 0; right: 0;
             display: flex; justify-content: space-between; padding: 0 20px;
@@ -81,23 +77,28 @@
 
         .btn-circle {
             width: 65px; height: 65px; border-radius: 50%;
-            background: rgba(128, 128, 128, 0.15);
+            /* Сделали фон чуть заметнее */
+            background: rgba(128, 128, 128, 0.25);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 2px solid transparent; transition: 0.2s;
             cursor: pointer; position: relative;
         }
 
-        .btn-circle.locked { opacity: 0.3; filter: grayscale(1); }
-        .btn-circle.affordable { opacity: 1; border-color: var(--gold); }
+        /* Текст и иконки теперь всегда берут контрастный цвет из темы */
+        .btn-circle span, .btn-circle div { color: var(--tg-text) !important; }
+
+        .btn-circle.locked { opacity: 0.5; filter: grayscale(0.8); }
+        .btn-circle.affordable { opacity: 1; border-color: var(--gold); background: rgba(128, 128, 128, 0.35); }
         .btn-circle.active-turbo { border-color: var(--danger); box-shadow: 0 0 15px var(--danger); }
 
-        .btn-icon { font-size: 24px; }
-        .btn-price { font-size: 10px; font-weight: bold; color: var(--gold) !important; margin-top: 2px; }
+        .btn-icon { font-size: 26px; line-height: 1; }
+        .btn-price { font-size: 11px; font-weight: bold; color: var(--gold) !important; margin-top: 2px; }
         
         .lvl-badge { 
-            position: absolute; top: -2px; right: -2px; 
-            background: var(--tg-theme-link-color, #2481cc); color: #fff !important; font-size: 9px; 
-            padding: 2px 6px; border-radius: 10px; font-weight: bold;
+            position: absolute; top: -4px; right: -4px; 
+            background: var(--ice); color: #fff !important; font-size: 10px; 
+            padding: 2px 7px; border-radius: 12px; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         #notif {
@@ -145,27 +146,24 @@
     tg.ready();
     tg.expand();
 
-    // ФУНКЦИЯ ПРИНУДИТЕЛЬНОЙ СИНХРОНИЗАЦИИ ФОНА
-    function syncTelegramTheme() {
+    // ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИИ ТЕМЫ (FIX)
+    function syncTheme() {
         const isDark = tg.colorScheme === 'dark';
-        const bgColor = tg.themeParams.bg_color || (isDark ? '#1a1a1a' : '#ffffff');
+        const bgColor = tg.themeParams.bg_color || (isDark ? '#000000' : '#ffffff');
         const textColor = tg.themeParams.text_color || (isDark ? '#ffffff' : '#000000');
 
-        // Применяем напрямую к CSS переменным
+        // Обновляем CSS переменные
         document.documentElement.style.setProperty('--tg-bg', bgColor);
         document.documentElement.style.setProperty('--tg-text', textColor);
         
-        // Дополнительно красим через методы Telegram
+        // Красим body и системные элементы TG
+        document.body.style.backgroundColor = bgColor;
         tg.setBackgroundColor(bgColor);
         tg.setHeaderColor(bgColor);
-        
-        // Форсируем покраску body
-        document.body.style.backgroundColor = bgColor;
     }
     
-    // Вызываем сразу и вешаем на событие смены темы
-    syncTelegramTheme();
-    tg.onEvent('themeChanged', syncTelegramTheme);
+    syncTheme();
+    tg.onEvent('themeChanged', syncTheme);
 
     // Блокировка свайпа вниз
     document.addEventListener('touchmove', (e) => {
@@ -176,7 +174,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    let state = JSON.parse(localStorage.getItem('pixel_vac_v10')) || {
+    let state = JSON.parse(localStorage.getItem('pixel_vac_v11')) || {
         coins: 0, pLvl: 0, rLvl: 0, bestCombo: 0
     };
 
@@ -221,7 +219,7 @@
         clumps.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            life: 2.0, // 2 секунды на базовой силе
+            life: 2.0, 
             parts: Array.from({length: 8}, () => ({ dx: Math.random()*12-6, dy: Math.random()*12-6 }))
         });
     }
@@ -378,7 +376,7 @@
         setTimeout(() => el.className = '', 1500);
     }
 
-    function save() { localStorage.setItem('pixel_vac_v10', JSON.stringify(state)); }
+    function save() { localStorage.setItem('pixel_vac_v11', JSON.stringify(state)); }
 
     function handleInput(e) {
         const rect = canvas.getBoundingClientRect();

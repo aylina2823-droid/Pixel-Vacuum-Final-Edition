@@ -7,17 +7,15 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Берем цвета напрямую из системы Telegram */
-            --tg-bg: var(--tg-theme-bg-color, #ffffff);
-            --tg-text: var(--tg-theme-text-color, #000000);
-            --tg-hint: var(--tg-theme-hint-color, #aaaaaa);
-            --tg-link: var(--tg-theme-link-color, #2481cc);
+            /* Динамические переменные, которые мы будем менять из JS */
+            --tg-bg: #ffffff;
+            --tg-text: #000000;
             --gold: #facc15;
             --danger: #ef4444;
             --ice: #3b82f6;
         }
 
-        /* Полная блокировка свайпов и системных движений */
+        /* Блокировка сворачивания и системных жестов */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -30,9 +28,9 @@
             width: 100%; height: 100%;
             overflow: hidden; 
             position: fixed; 
-            /* Фон body теперь динамический */
+            /* Привязываем фон к динамической переменной */
             background-color: var(--tg-bg) !important;
-            color: var(--tg-text);
+            color: var(--tg-text) !important;
             font-family: -apple-system, system-ui, sans-serif;
             overscroll-behavior: none;
         }
@@ -42,20 +40,17 @@
             flex-direction: column;
             width: 100%;
             height: 100%;
-            /* Безопасный отступ снизу для современных смартфонов */
             padding-bottom: calc(15px + env(safe-area-inset-bottom));
         }
 
-        /* Само игровое поле остается черным, чтобы пиксели светились */
         #game-container {
             position: relative;
             flex-grow: 1;
             margin: 10px;
-            background: #000;
+            background: #000; /* Внутри игры всегда черный для эффектов */
             border-radius: 24px;
-            border: 1px solid rgba(128, 128, 128, 0.2);
+            border: 1px solid rgba(128, 128, 128, 0.3);
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
@@ -82,7 +77,6 @@
             height: 100px;
             display: flex; justify-content: center; align-items: center;
             gap: 20px; padding: 0 10px;
-            background: transparent;
         }
 
         .btn-circle {
@@ -92,8 +86,6 @@
             border: 2px solid transparent; transition: 0.2s;
             cursor: pointer; position: relative;
         }
-        /* Меняем цвет текста кнопок в зависимости от темы */
-        .btn-circle span, .btn-circle div { color: var(--tg-text); }
 
         .btn-circle.locked { opacity: 0.3; filter: grayscale(1); }
         .btn-circle.affordable { opacity: 1; border-color: var(--gold); }
@@ -104,7 +96,7 @@
         
         .lvl-badge { 
             position: absolute; top: -2px; right: -2px; 
-            background: var(--tg-link); color: #fff !important; font-size: 9px; 
+            background: var(--tg-theme-link-color, #2481cc); color: #fff !important; font-size: 9px; 
             padding: 2px 6px; border-radius: 10px; font-weight: bold;
         }
 
@@ -153,18 +145,29 @@
     tg.ready();
     tg.expand();
 
-    // ПРИНУДИТЕЛЬНАЯ НАСТРОЙКА ФОНА ИЗ JS
-    function updateThemeColors() {
-        const bgColor = tg.themeParams.bg_color || (tg.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff');
-        document.body.style.backgroundColor = bgColor;
+    // ФУНКЦИЯ ПРИНУДИТЕЛЬНОЙ СИНХРОНИЗАЦИИ ФОНА
+    function syncTelegramTheme() {
+        const isDark = tg.colorScheme === 'dark';
+        const bgColor = tg.themeParams.bg_color || (isDark ? '#1a1a1a' : '#ffffff');
+        const textColor = tg.themeParams.text_color || (isDark ? '#ffffff' : '#000000');
+
+        // Применяем напрямую к CSS переменным
+        document.documentElement.style.setProperty('--tg-bg', bgColor);
+        document.documentElement.style.setProperty('--tg-text', textColor);
+        
+        // Дополнительно красим через методы Telegram
         tg.setBackgroundColor(bgColor);
         tg.setHeaderColor(bgColor);
+        
+        // Форсируем покраску body
+        document.body.style.backgroundColor = bgColor;
     }
     
-    updateThemeColors();
-    tg.onEvent('themeChanged', updateThemeColors);
+    // Вызываем сразу и вешаем на событие смены темы
+    syncTelegramTheme();
+    tg.onEvent('themeChanged', syncTelegramTheme);
 
-    // Блокировка свайпа вниз (предотвращение сворачивания)
+    // Блокировка свайпа вниз
     document.addEventListener('touchmove', (e) => {
         if (e.touches.length > 1) e.preventDefault(); 
         e.preventDefault(); 
@@ -173,7 +176,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    let state = JSON.parse(localStorage.getItem('pixel_vac_v9')) || {
+    let state = JSON.parse(localStorage.getItem('pixel_vac_v10')) || {
         coins: 0, pLvl: 0, rLvl: 0, bestCombo: 0
     };
 
@@ -260,7 +263,7 @@
 
         if (mouse.down && !isOverheated) {
             if (iceMode > 0) iceMode -= dt;
-            else heat = Math.min(100, heat + dt * 6); // Медленный нагрев
+            else heat = Math.min(100, heat + dt * 6); 
 
             if (heat >= 100) {
                 isOverheated = true; haptic('heavy');
@@ -375,7 +378,7 @@
         setTimeout(() => el.className = '', 1500);
     }
 
-    function save() { localStorage.setItem('pixel_vac_v9', JSON.stringify(state)); }
+    function save() { localStorage.setItem('pixel_vac_v10', JSON.stringify(state)); }
 
     function handleInput(e) {
         const rect = canvas.getBoundingClientRect();

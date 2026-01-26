@@ -7,8 +7,9 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --tg-bg: var(--tg-theme-bg-color, #1a1a1a);
-            --tg-text: var(--tg-theme-text-color, #ffffff);
+            /* Берем цвета напрямую из системы Telegram */
+            --tg-bg: var(--tg-theme-bg-color, #ffffff);
+            --tg-text: var(--tg-theme-text-color, #000000);
             --tg-hint: var(--tg-theme-hint-color, #aaaaaa);
             --tg-link: var(--tg-theme-link-color, #2481cc);
             --gold: #facc15;
@@ -16,7 +17,7 @@
             --ice: #3b82f6;
         }
 
-        /* Блокировка сворачивания и системных жестов */
+        /* Полная блокировка свайпов и системных движений */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -29,7 +30,8 @@
             width: 100%; height: 100%;
             overflow: hidden; 
             position: fixed; 
-            background: var(--tg-bg) !important;
+            /* Фон body теперь динамический */
+            background-color: var(--tg-bg) !important;
             color: var(--tg-text);
             font-family: -apple-system, system-ui, sans-serif;
             overscroll-behavior: none;
@@ -40,17 +42,20 @@
             flex-direction: column;
             width: 100%;
             height: 100%;
+            /* Безопасный отступ снизу для современных смартфонов */
             padding-bottom: calc(15px + env(safe-area-inset-bottom));
         }
 
+        /* Само игровое поле остается черным, чтобы пиксели светились */
         #game-container {
             position: relative;
             flex-grow: 1;
             margin: 10px;
             background: #000;
             border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(128, 128, 128, 0.2);
             overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
@@ -62,8 +67,8 @@
             pointer-events: none; z-index: 10;
         }
         .stat-box { text-align: center; }
-        .stat-label { font-size: 10px; color: var(--tg-hint); text-transform: uppercase; }
-        .stat-val { font-size: 18px; font-weight: 800; }
+        .stat-label { font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; }
+        .stat-val { font-size: 18px; font-weight: 800; color: #fff; }
 
         .heat-container {
             position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
@@ -72,30 +77,34 @@
         }
         #heat-fill { width: 0%; height: 100%; background: var(--danger); transition: width 0.2s; }
         #heat-fill.frozen { background: var(--ice); box-shadow: 0 0 10px var(--ice); }
-        #heat-fill.cooling { background: var(--tg-link); opacity: 0.6; }
 
         .bottom-bar {
             height: 100px;
             display: flex; justify-content: center; align-items: center;
             gap: 20px; padding: 0 10px;
+            background: transparent;
         }
 
         .btn-circle {
             width: 65px; height: 65px; border-radius: 50%;
-            background: rgba(255,255,255,0.05);
+            background: rgba(128, 128, 128, 0.15);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 2px solid transparent; transition: 0.2s;
             cursor: pointer; position: relative;
         }
+        /* Меняем цвет текста кнопок в зависимости от темы */
+        .btn-circle span, .btn-circle div { color: var(--tg-text); }
+
         .btn-circle.locked { opacity: 0.3; filter: grayscale(1); }
         .btn-circle.affordable { opacity: 1; border-color: var(--gold); }
         .btn-circle.active-turbo { border-color: var(--danger); box-shadow: 0 0 15px var(--danger); }
 
         .btn-icon { font-size: 24px; }
-        .btn-price { font-size: 10px; font-weight: bold; color: var(--gold); margin-top: 2px; }
+        .btn-price { font-size: 10px; font-weight: bold; color: var(--gold) !important; margin-top: 2px; }
+        
         .lvl-badge { 
             position: absolute; top: -2px; right: -2px; 
-            background: var(--tg-link); color: white; font-size: 9px; 
+            background: var(--tg-link); color: #fff !important; font-size: 9px; 
             padding: 2px 6px; border-radius: 10px; font-weight: bold;
         }
 
@@ -144,7 +153,18 @@
     tg.ready();
     tg.expand();
 
-    // Принудительная блокировка свайпа вниз для Telegram
+    // ПРИНУДИТЕЛЬНАЯ НАСТРОЙКА ФОНА ИЗ JS
+    function updateThemeColors() {
+        const bgColor = tg.themeParams.bg_color || (tg.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff');
+        document.body.style.backgroundColor = bgColor;
+        tg.setBackgroundColor(bgColor);
+        tg.setHeaderColor(bgColor);
+    }
+    
+    updateThemeColors();
+    tg.onEvent('themeChanged', updateThemeColors);
+
+    // Блокировка свайпа вниз (предотвращение сворачивания)
     document.addEventListener('touchmove', (e) => {
         if (e.touches.length > 1) e.preventDefault(); 
         e.preventDefault(); 
@@ -153,7 +173,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    let state = JSON.parse(localStorage.getItem('pixel_vac_v8')) || {
+    let state = JSON.parse(localStorage.getItem('pixel_vac_v9')) || {
         coins: 0, pLvl: 0, rLvl: 0, bestCombo: 0
     };
 
@@ -198,7 +218,7 @@
         clumps.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            life: 2.0, // "Здоровье" объекта. 2.0 при силе 1.0 = ровно 2 секунды.
+            life: 2.0, // 2 секунды на базовой силе
             parts: Array.from({length: 8}, () => ({ dx: Math.random()*12-6, dy: Math.random()*12-6 }))
         });
     }
@@ -238,10 +258,9 @@
         let currentPwr = (1 + state.pLvl * 0.18);
         if (turboTime > 0) { currentPwr *= 1.5; turboTime -= dt; }
 
-        // Heat Logic (Замедленная скорость накопления)
         if (mouse.down && !isOverheated) {
             if (iceMode > 0) iceMode -= dt;
-            else heat = Math.min(100, heat + dt * 6); 
+            else heat = Math.min(100, heat + dt * 6); // Медленный нагрев
 
             if (heat >= 100) {
                 isOverheated = true; haptic('heavy');
@@ -251,21 +270,17 @@
             heat = Math.max(0, heat - dt * 30);
         }
 
-        // Snowflake (Ледяной бонус)
         if (!snowflake && Math.random() < 0.001) spawnSnowflake();
         if (snowflake) {
             snowflake.life -= dt;
             const dist = Math.hypot(tx - snowflake.x, ty - snowflake.y);
             if (mouse.down && dist < 30) {
-                snowflake = null; 
-                iceMode = 5.0; 
-                heat = 0; // Снежинка обнуляет шкалу мгновенно
+                snowflake = null; iceMode = 5.0; heat = 0;
                 haptic('medium'); showNotif("ICE MODE!");
             } else if (snowflake.life <= 0) snowflake = null;
             else { ctx.font = "24px serif"; ctx.textAlign = "center"; ctx.fillText("❄️", snowflake.x, snowflake.y); }
         }
 
-        // Визуал радиуса действия
         if (mouse.down && !isOverheated) {
             const grad = ctx.createRadialGradient(tx, ty, 0, tx, ty, currentRad);
             let rCol = iceMode > 0 ? '59, 130, 246' : (turboTime > 0 ? '239, 68, 68' : '255, 255, 255');
@@ -275,7 +290,6 @@
             ctx.beginPath(); ctx.arc(tx, ty, currentRad, 0, Math.PI*2); ctx.fill();
         }
 
-        // Физика обычных пикселей
         for(let i=pixels.length-1; i>=0; i--) {
             let p = pixels[i];
             let dx = tx - p.x, dy = ty - p.y;
@@ -298,7 +312,6 @@
             ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
         }
 
-        // Физика тяжелых серых комков (Засасываются за 2 сек при базовой силе)
         if (Math.random() < 0.007 && clumps.length < 3) spawnClump();
         for(let i=clumps.length-1; i>=0; i--) {
             let c = clumps[i];
@@ -306,7 +319,6 @@
             let dist = Math.hypot(dx, dy);
 
             if(mouse.down && !isOverheated && dist < currentRad) {
-                // Коэффициент 1.0 гарантирует: 2.0 жизни / (1.0 силы * 1.0) = 2 секунды.
                 c.life -= dt * (currentPwr * 1.0); 
                 c.x += (dx/dist) * 1.5; c.y += (dy/dist) * 1.5;
                 if(c.life <= 0) {
@@ -349,7 +361,6 @@
         const price = Math.floor(base * Math.pow(factor, lvl));
         const pEl = document.getElementById(id[0] + '-price');
         const lEl = document.getElementById(id[0] + '-lvl');
-
         lEl.innerText = lvl;
         if(lvl >= max) { btn.className = 'btn-circle affordable'; pEl.innerText = 'MAX'; }
         else { 
@@ -364,7 +375,7 @@
         setTimeout(() => el.className = '', 1500);
     }
 
-    function save() { localStorage.setItem('pixel_vac_v8', JSON.stringify(state)); }
+    function save() { localStorage.setItem('pixel_vac_v9', JSON.stringify(state)); }
 
     function handleInput(e) {
         const rect = canvas.getBoundingClientRect();

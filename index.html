@@ -17,7 +17,7 @@
             --gold: #facc15;
             --danger: #ef4444;
             --ice: #3b82f6;
-            --game-bg: #0a0a0a; /* Темный фон для контраста пикселей */
+            --game-bg: #0a0a0a;
         }
 
         * {
@@ -27,29 +27,33 @@
             touch-action: none;
         }
 
-        html, body {
+        /* Жесткая блокировка прокрутки на уровне CSS */
+        body, html {
             margin: 0; padding: 0; 
-            width: 100%; height: 100%;
-            overflow: hidden; 
-            position: fixed; 
+            position: fixed;
+            overflow: hidden;
+            width: 100%;
+            height: 100vh;
+            overscroll-behavior: none;
+            touch-action: none;
             background-color: var(--tg-bg) !important;
             color: var(--tg-text) !important;
             font-family: -apple-system, system-ui, sans-serif;
-            overscroll-behavior: none;
         }
 
         #game-wrapper {
-            display: flex;
-            flex-direction: column;
+            position: relative;
             width: 100%;
             height: 100%;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            display: flex;
+            flex-direction: column;
         }
 
         #game-container {
             position: relative;
-            flex-grow: 1;
+            flex: 1;
             margin: 10px;
+            margin-bottom: 130px; /* Отступ под фиксированную панель */
             background: var(--game-bg);
             border-radius: 28px;
             border: 2px solid var(--tg-secondary-bg);
@@ -76,11 +80,21 @@
         #heat-fill { width: 0%; height: 100%; background: var(--danger); transition: width 0.2s; }
         #heat-fill.frozen { background: var(--ice); box-shadow: 0 0 10px var(--ice); }
 
+        /* Фиксированная панель управления (исправленная) */
         .bottom-bar {
-            height: 110px;
-            display: flex; justify-content: center; align-items: center;
-            gap: 25px; padding: 0 15px;
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            height: 100px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            padding: 0 10px;
+            padding-bottom: env(safe-area-inset-bottom);
             background: var(--tg-bg);
+            z-index: 1000;
         }
 
         .btn-circle {
@@ -88,10 +102,10 @@
             background: var(--tg-secondary-bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 2.5px solid transparent; 
-            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s, opacity 0.2s;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
             cursor: pointer; position: relative;
-            opacity: 1 !important; /* Убираем прозрачность */
-            filter: grayscale(0) !important; /* Убираем обесцвечивание */
+            opacity: 1 !important; 
+            filter: grayscale(0) !important; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
@@ -104,19 +118,16 @@
 
         .btn-circle.locked { 
             opacity: 0.6 !important; 
-            border-color: transparent;
         }
         
         .btn-circle.affordable { 
             border-color: var(--gold); 
-            background: var(--tg-secondary-bg);
             box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
         }
         
         .btn-circle.active-turbo { 
             border-color: var(--danger); 
             box-shadow: 0 0 20px var(--danger);
-            background: var(--tg-secondary-bg);
         }
 
         .btn-icon { font-size: 28px; line-height: 1; margin-bottom: 2px; }
@@ -154,35 +165,37 @@
     </div>
 
     <div class="bottom-bar">
-        <div class="btn-circle" onclick="upgrade('power')" id="btn-power">
+        <button class="btn-circle" onclick="upgrade('power')" id="btn-power">
             <div class="lvl-badge" id="p-lvl">0</div>
             <span class="btn-icon">💪</span>
             <div class="btn-price" id="p-price">50</div>
-        </div>
-        <div class="btn-circle" onclick="startTurbo()" id="btn-turbo">
+        </button>
+        <button class="btn-circle" onclick="startTurbo()" id="btn-turbo">
             <span class="btn-icon">⚡</span>
             <div class="btn-price">200</div>
-        </div>
-        <div class="btn-circle" onclick="upgrade('radius')" id="btn-radius">
+        </button>
+        <button class="btn-circle" onclick="upgrade('radius')" id="btn-radius">
             <div class="lvl-badge" id="r-lvl">0</div>
             <span class="btn-icon">🔍</span>
             <div class="btn-price" id="r-price">75</div>
-        </div>
+        </button>
     </div>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-    
-    // ПРЕДОТВРАЩЕНИЕ ЗАКРЫТИЯ ПРИ СВАЙПЕ ВНИЗ
-    if (tg.disableVerticalSwiping) {
-        tg.disableVerticalSwiping();
+    // 1. Инициализация Telegram WebApp и блокировка свайпа (как запрошено)
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        if (typeof tg.disableVerticalSwiping === 'function') {
+            tg.disableVerticalSwiping();
+        }
     }
 
     // Синхронизация визуальной темы
     function syncTheme() {
+        const tg = window.Telegram.WebApp;
         const isDark = tg.colorScheme === 'dark';
         const bgColor = tg.themeParams.bg_color || (isDark ? '#000000' : '#ffffff');
         const textColor = tg.themeParams.text_color || (isDark ? '#ffffff' : '#000000');
@@ -198,12 +211,7 @@
     }
     
     syncTheme();
-    tg.onEvent('themeChanged', syncTheme);
-
-    // Блокировка системных жестов браузера
-    document.addEventListener('touchmove', (e) => {
-        if (e.touches.length > 1) e.preventDefault(); 
-    }, { passive: false });
+    window.Telegram.WebApp.onEvent('themeChanged', syncTheme);
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -224,7 +232,7 @@
     let lastTime = performance.now();
 
     function haptic(type = 'medium') {
-        try { tg.HapticFeedback.impactOccurred(type); } catch(e) {}
+        try { window.Telegram.WebApp.HapticFeedback.impactOccurred(type); } catch(e) {}
     }
 
     function init() {
@@ -418,9 +426,18 @@
         const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
         mouse.x = x; mouse.y = y;
     }
+    
     window.addEventListener('pointerdown', e => { mouse.down = true; handleInput(e); });
     window.addEventListener('pointermove', handleInput);
     window.addEventListener('pointerup', () => mouse.down = false);
+
+    // 2. Глухая блокировка системных жестов прокрутки (как запрошено)
+    document.body.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 1 || (e.target.tagName !== 'CANVAS' && e.target.tagName !== 'BUTTON')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
     init();
 </script>
 </body>

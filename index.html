@@ -7,11 +7,17 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --tg-bg: #ffffff;
-            --tg-text: #000000;
+            /* Интеграция с системными цветами Telegram */
+            --tg-bg: var(--tg-theme-bg-color, #ffffff);
+            --tg-text: var(--tg-theme-text-color, #000000);
+            --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            --tg-hint: var(--tg-theme-hint-color, #999999);
+            --tg-button: var(--tg-theme-button-color, #3390ec);
+            
             --gold: #facc15;
             --danger: #ef4444;
             --ice: #3b82f6;
+            --game-bg: #0a0a0a; /* Темный фон для контраста пикселей */
         }
 
         * {
@@ -44,70 +50,94 @@
             position: relative;
             flex-grow: 1;
             margin: 10px;
-            background: #000;
-            border-radius: 24px;
-            border: 1px solid rgba(128, 128, 128, 0.4);
+            background: var(--game-bg);
+            border-radius: 28px;
+            border: 2px solid var(--tg-secondary-bg);
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
         .stats-top {
             position: absolute; top: 15px; left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 20px;
+            display: flex; justify-content: space-between; padding: 0 25px;
             pointer-events: none; z-index: 10;
         }
         .stat-box { text-align: center; }
-        .stat-label { font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; }
-        .stat-val { font-size: 18px; font-weight: 800; color: #fff; }
+        .stat-label { font-size: 10px; color: var(--tg-hint); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
+        .stat-val { font-size: 20px; font-weight: 800; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
         .heat-container {
-            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
-            width: 120px; height: 4px; background: rgba(255,255,255,0.1);
-            border-radius: 2px; overflow: hidden; pointer-events: none;
+            position: absolute; top: 75px; left: 50%; transform: translateX(-50%);
+            width: 130px; height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 3px; overflow: hidden; pointer-events: none;
         }
         #heat-fill { width: 0%; height: 100%; background: var(--danger); transition: width 0.2s; }
         #heat-fill.frozen { background: var(--ice); box-shadow: 0 0 10px var(--ice); }
 
         .bottom-bar {
-            height: 100px;
+            height: 110px;
             display: flex; justify-content: center; align-items: center;
-            gap: 20px; padding: 0 10px;
+            gap: 25px; padding: 0 15px;
+            background: var(--tg-bg);
         }
 
         .btn-circle {
-            width: 65px; height: 65px; border-radius: 50%;
-            /* Сделали фон чуть заметнее */
-            background: rgba(128, 128, 128, 0.25);
+            width: 70px; height: 70px; border-radius: 50%;
+            background: var(--tg-secondary-bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 2px solid transparent; transition: 0.2s;
+            border: 2.5px solid transparent; 
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s, opacity 0.2s;
             cursor: pointer; position: relative;
+            opacity: 1 !important; /* Убираем прозрачность */
+            filter: grayscale(0) !important; /* Убираем обесцвечивание */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        /* Текст и иконки теперь всегда берут контрастный цвет из темы */
+        .btn-circle:active {
+            transform: scale(1.15);
+            filter: brightness(1.1);
+        }
+
         .btn-circle span, .btn-circle div { color: var(--tg-text) !important; }
 
-        .btn-circle.locked { opacity: 0.5; filter: grayscale(0.8); }
-        .btn-circle.affordable { opacity: 1; border-color: var(--gold); background: rgba(128, 128, 128, 0.35); }
-        .btn-circle.active-turbo { border-color: var(--danger); box-shadow: 0 0 15px var(--danger); }
+        .btn-circle.locked { 
+            opacity: 0.6 !important; 
+            border-color: transparent;
+        }
+        
+        .btn-circle.affordable { 
+            border-color: var(--gold); 
+            background: var(--tg-secondary-bg);
+            box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
+        }
+        
+        .btn-circle.active-turbo { 
+            border-color: var(--danger); 
+            box-shadow: 0 0 20px var(--danger);
+            background: var(--tg-secondary-bg);
+        }
 
-        .btn-icon { font-size: 26px; line-height: 1; }
-        .btn-price { font-size: 11px; font-weight: bold; color: var(--gold) !important; margin-top: 2px; }
+        .btn-icon { font-size: 28px; line-height: 1; margin-bottom: 2px; }
+        .btn-price { font-size: 11px; font-weight: 800; color: var(--gold) !important; text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
         
         .lvl-badge { 
-            position: absolute; top: -4px; right: -4px; 
-            background: var(--ice); color: #fff !important; font-size: 10px; 
-            padding: 2px 7px; border-radius: 12px; font-weight: bold;
+            position: absolute; top: -5px; right: -5px; 
+            background: var(--tg-button); color: #fff !important; font-size: 11px; 
+            padding: 2px 8px; border-radius: 12px; font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 2px solid var(--tg-bg);
         }
 
         #notif {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            pointer-events: none; font-weight: 900; font-size: 26px;
-            color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.8); display: none;
+            pointer-events: none; font-weight: 900; font-size: 28px;
+            color: #fff; text-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;
+            z-index: 100;
         }
         .animate-pop { display: block; animation: pop 1.5s forwards; }
-        @keyframes pop { 0% { opacity: 0; scale: 0.5; } 20% { opacity: 1; scale: 1; } 100% { opacity: 0; transform: translateY(-50px); } }
+        @keyframes pop { 0% { opacity: 0; scale: 0.5; } 20% { opacity: 1; scale: 1; } 100% { opacity: 0; transform: translate(-50%, -100px); } }
     </style>
 </head>
 <body>
@@ -145,18 +175,23 @@
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    
+    // ПРЕДОТВРАЩЕНИЕ ЗАКРЫТИЯ ПРИ СВАЙПЕ ВНИЗ
+    if (tg.disableVerticalSwiping) {
+        tg.disableVerticalSwiping();
+    }
 
-    // ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИИ ТЕМЫ (FIX)
+    // Синхронизация визуальной темы
     function syncTheme() {
         const isDark = tg.colorScheme === 'dark';
         const bgColor = tg.themeParams.bg_color || (isDark ? '#000000' : '#ffffff');
         const textColor = tg.themeParams.text_color || (isDark ? '#ffffff' : '#000000');
+        const secBgColor = tg.themeParams.secondary_bg_color || (isDark ? '#1c1c1d' : '#f0f0f0');
 
-        // Обновляем CSS переменные
         document.documentElement.style.setProperty('--tg-bg', bgColor);
         document.documentElement.style.setProperty('--tg-text', textColor);
+        document.documentElement.style.setProperty('--tg-secondary-bg', secBgColor);
         
-        // Красим body и системные элементы TG
         document.body.style.backgroundColor = bgColor;
         tg.setBackgroundColor(bgColor);
         tg.setHeaderColor(bgColor);
@@ -165,10 +200,9 @@
     syncTheme();
     tg.onEvent('themeChanged', syncTheme);
 
-    // Блокировка свайпа вниз
+    // Блокировка системных жестов браузера
     document.addEventListener('touchmove', (e) => {
         if (e.touches.length > 1) e.preventDefault(); 
-        e.preventDefault(); 
     }, { passive: false });
 
     const canvas = document.getElementById('gameCanvas');

@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Интеграция с системными цветами Telegram */
             --tg-bg: var(--tg-theme-bg-color, #ffffff);
             --tg-text: var(--tg-theme-text-color, #000000);
             --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
@@ -24,21 +23,22 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
-            touch-action: none;
         }
 
-        /* Жесткая блокировка прокрутки на уровне CSS */
-        body, html {
-            margin: 0; padding: 0; 
+        /* 2. CSS Lock (Обязательно) */
+        html, body {
+            margin: 0;
+            padding: 0; 
             position: fixed;
             overflow: hidden;
             width: 100%;
-            height: 100vh;
+            height: 100%;
             overscroll-behavior: none;
-            touch-action: none;
+            touch-action: none; /* Убивает системные жесты браузера */
             background-color: var(--tg-bg) !important;
             color: var(--tg-text) !important;
             font-family: -apple-system, system-ui, sans-serif;
+            z-index: 0;
         }
 
         #game-wrapper {
@@ -47,26 +47,39 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            z-index: 1;
         }
 
         #game-container {
             position: relative;
             flex: 1;
             margin: 10px;
-            margin-bottom: 130px; /* Отступ под фиксированную панель */
+            margin-bottom: 120px; /* Запас под фиксированную панель */
             background: var(--game-bg);
             border-radius: 28px;
             border: 2px solid var(--tg-secondary-bg);
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 5;
         }
 
-        canvas { display: block; width: 100%; height: 100%; }
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+            touch-action: none;
+        }
 
         .stats-top {
-            position: absolute; top: 15px; left: 0; right: 0;
-            display: flex; justify-content: space-between; padding: 0 25px;
-            pointer-events: none; z-index: 10;
+            position: absolute; 
+            top: 15px; 
+            left: 0; 
+            right: 0;
+            display: flex; 
+            justify-content: space-between; 
+            padding: 0 25px;
+            pointer-events: none; 
+            z-index: 20;
         }
         .stat-box { text-align: center; }
         .stat-label { font-size: 10px; color: var(--tg-hint); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
@@ -76,17 +89,18 @@
             position: absolute; top: 75px; left: 50%; transform: translateX(-50%);
             width: 130px; height: 6px; background: rgba(255,255,255,0.1);
             border-radius: 3px; overflow: hidden; pointer-events: none;
+            z-index: 20;
         }
         #heat-fill { width: 0%; height: 100%; background: var(--danger); transition: width 0.2s; }
         #heat-fill.frozen { background: var(--ice); box-shadow: 0 0 10px var(--ice); }
 
-        /* Фиксированная панель управления (исправленная) */
+        /* Панель управления с фиксированным позиционированием */
         .bottom-bar {
             position: fixed;
             bottom: 20px;
             left: 0;
             right: 0;
-            height: 100px;
+            height: 90px;
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -95,6 +109,7 @@
             padding-bottom: env(safe-area-inset-bottom);
             background: var(--tg-bg);
             z-index: 1000;
+            pointer-events: auto;
         }
 
         .btn-circle {
@@ -102,40 +117,46 @@
             background: var(--tg-secondary-bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 2.5px solid transparent; 
-            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
-            cursor: pointer; position: relative;
-            opacity: 1 !important; 
-            filter: grayscale(0) !important; 
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer; 
+            position: relative;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            outline: none;
+            -webkit-appearance: none;
+            padding: 0;
+            margin: 0;
         }
 
         .btn-circle:active {
-            transform: scale(1.15);
-            filter: brightness(1.1);
+            transform: scale(1.1);
         }
 
-        .btn-circle span, .btn-circle div { color: var(--tg-text) !important; }
-
         .btn-circle.locked { 
-            opacity: 0.6 !important; 
+            opacity: 0.5; 
         }
         
         .btn-circle.affordable { 
             border-color: var(--gold); 
-            box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
+            box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
         }
         
         .btn-circle.active-turbo { 
             border-color: var(--danger); 
             box-shadow: 0 0 20px var(--danger);
+            animation: pulse-red 1s infinite alternate;
         }
 
-        .btn-icon { font-size: 28px; line-height: 1; margin-bottom: 2px; }
-        .btn-price { font-size: 11px; font-weight: 800; color: var(--gold) !important; text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        @keyframes pulse-red {
+            from { box-shadow: 0 0 10px var(--danger); }
+            to { box-shadow: 0 0 25px var(--danger); }
+        }
+
+        .btn-icon { font-size: 26px; line-height: 1; margin-bottom: 2px; }
+        .btn-price { font-size: 11px; font-weight: 800; color: var(--gold); }
         
         .lvl-badge { 
             position: absolute; top: -5px; right: -5px; 
-            background: var(--tg-button); color: #fff !important; font-size: 11px; 
+            background: var(--tg-button); color: #fff; font-size: 11px; 
             padding: 2px 8px; border-radius: 12px; font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             border: 2px solid var(--tg-bg);
@@ -148,7 +169,11 @@
             z-index: 100;
         }
         .animate-pop { display: block; animation: pop 1.5s forwards; }
-        @keyframes pop { 0% { opacity: 0; scale: 0.5; } 20% { opacity: 1; scale: 1; } 100% { opacity: 0; transform: translate(-50%, -100px); } }
+        @keyframes pop { 
+            0% { opacity: 0; scale: 0.5; } 
+            20% { opacity: 1; scale: 1; } 
+            100% { opacity: 0; transform: translate(-50%, -100px); } 
+        }
     </style>
 </head>
 <body>
@@ -183,7 +208,7 @@
 </div>
 
 <script>
-    // 1. Инициализация Telegram WebApp и блокировка свайпа (как запрошено)
+    // 1. Telegram API (Обязательно)
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         tg.ready();
@@ -195,6 +220,7 @@
 
     // Синхронизация визуальной темы
     function syncTheme() {
+        if (!window.Telegram || !window.Telegram.WebApp) return;
         const tg = window.Telegram.WebApp;
         const isDark = tg.colorScheme === 'dark';
         const bgColor = tg.themeParams.bg_color || (isDark ? '#000000' : '#ffffff');
@@ -206,12 +232,14 @@
         document.documentElement.style.setProperty('--tg-secondary-bg', secBgColor);
         
         document.body.style.backgroundColor = bgColor;
-        tg.setBackgroundColor(bgColor);
-        tg.setHeaderColor(bgColor);
+        if (tg.setBackgroundColor) tg.setBackgroundColor(bgColor);
+        if (tg.setHeaderColor) tg.setHeaderColor(bgColor);
     }
     
     syncTheme();
-    window.Telegram.WebApp.onEvent('themeChanged', syncTheme);
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.onEvent('themeChanged', syncTheme);
+    }
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -220,7 +248,7 @@
         coins: 0, pLvl: 0, rLvl: 0, bestCombo: 0
     };
 
-    const OFFSET_Y = 80;
+    const OFFSET_Y = 0; // Теперь не нужен, так как канвас занимает свое место
     const MAX_RAD = 120;
     const MAX_LVL = 15;
     const TURBO_COST = 200;
@@ -296,7 +324,7 @@
         lastTime = t;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const tx = mouse.x, ty = mouse.y - OFFSET_Y;
+        const tx = mouse.x, ty = mouse.y;
         const currentRad = Math.min(55 + (state.rLvl * 5), MAX_RAD);
         let currentPwr = (1 + state.pLvl * 0.18);
         if (turboTime > 0) { currentPwr *= 1.5; turboTime -= dt; }
@@ -388,32 +416,48 @@
         if(combo > state.bestCombo) state.bestCombo = combo;
 
         const hFill = document.getElementById('heat-fill');
-        hFill.style.width = heat + '%';
-        hFill.className = isOverheated ? 'cooling' : (iceMode > 0 ? 'frozen' : '');
+        if (hFill) {
+            hFill.style.width = heat + '%';
+            hFill.className = isOverheated ? 'cooling' : (iceMode > 0 ? 'frozen' : '');
+        }
 
         updateBtn('power', state.pLvl, MAX_LVL, 50, 1.7);
         updateBtn('radius', state.rLvl, MAX_LVL, 75, 1.8);
         
         const tBtn = document.getElementById('btn-turbo');
-        if (turboTime > 0) tBtn.className = 'btn-circle active-turbo';
-        else tBtn.className = state.coins >= TURBO_COST ? 'btn-circle affordable' : 'btn-circle locked';
+        if (tBtn) {
+            if (turboTime > 0) tBtn.className = 'btn-circle active-turbo';
+            else tBtn.className = state.coins >= TURBO_COST ? 'btn-circle affordable' : 'btn-circle locked';
+        }
     }
 
     function updateBtn(id, lvl, max, base, factor) {
         const btn = document.getElementById('btn-' + id);
+        if (!btn) return;
         const price = Math.floor(base * Math.pow(factor, lvl));
         const pEl = document.getElementById(id[0] + '-price');
         const lEl = document.getElementById(id[0] + '-lvl');
-        lEl.innerText = lvl;
-        if(lvl >= max) { btn.className = 'btn-circle affordable'; pEl.innerText = 'MAX'; }
-        else { 
-            pEl.innerText = price;
-            btn.className = state.coins >= price ? 'btn-circle affordable' : 'btn-circle locked';
+        if (lEl) lEl.innerText = lvl;
+        if (pEl) {
+            if(lvl >= max) { 
+                btn.classList.add('affordable'); 
+                pEl.innerText = 'MAX'; 
+            } else { 
+                pEl.innerText = price;
+                if (state.coins >= price) {
+                    btn.classList.add('affordable');
+                    btn.classList.remove('locked');
+                } else {
+                    btn.classList.remove('affordable');
+                    btn.classList.add('locked');
+                }
+            }
         }
     }
 
     function showNotif(msg) {
         const el = document.getElementById('notif');
+        if (!el) return;
         el.innerText = msg; el.className = 'animate-pop';
         setTimeout(() => el.className = '', 1500);
     }
@@ -422,20 +466,28 @@
 
     function handleInput(e) {
         const rect = canvas.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
         mouse.x = x; mouse.y = y;
     }
     
-    window.addEventListener('pointerdown', e => { mouse.down = true; handleInput(e); });
-    window.addEventListener('pointermove', handleInput);
-    window.addEventListener('pointerup', () => mouse.down = false);
-
-    // 2. Глухая блокировка системных жестов прокрутки (как запрошено)
-    document.body.addEventListener('touchmove', function(e) {
-        if (e.touches.length > 1 || (e.target.tagName !== 'CANVAS' && e.target.tagName !== 'BUTTON')) {
-            e.preventDefault();
+    window.addEventListener('pointerdown', e => { 
+        if (e.target.tagName === 'CANVAS') {
+            mouse.down = true; 
+            handleInput(e); 
         }
+    });
+    window.addEventListener('pointermove', e => {
+        if (mouse.down) handleInput(e);
+    });
+    window.addEventListener('pointerup', () => mouse.down = false);
+    window.addEventListener('pointercancel', () => mouse.down = false);
+
+    // 3. JS Override (Обязательно) - Глухая блокировка системных жестов
+    document.addEventListener('touchmove', function (e) {
+        e.preventDefault();
     }, { passive: false });
 
     init();
